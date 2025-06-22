@@ -56,15 +56,6 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         {children}
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js');
-              });
-            }
-          `
-        }} />
       </body>
     </html>
   )

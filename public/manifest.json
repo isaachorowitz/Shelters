@@ -3,24 +3,21 @@
   "short_name": "SHELTER NOW",
   "description": "Emergency bomb shelter locator for Israel - Find the nearest shelter in seconds",
   "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait",
+  "display": "browser",
+  "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#DC2626",
   "categories": ["emergency", "navigation", "safety"],
-  "permissions": ["geolocation"],
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ],
   "screenshots": [
