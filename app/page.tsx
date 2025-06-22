@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import Header from "@/components/header"
 import ShelterPanel from "@/components/shelter-panel"
-import { Loader2, MapPin, Shield } from "lucide-react"
+import { Loader2, MapPin, Shield, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -43,6 +43,8 @@ export default function HomePage() {
   const [isTracking, setIsTracking] = useState(false)
   const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(null)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [locationChanged, setLocationChanged] = useState(false)
+  const lastLocationRef = useRef<Coordinates | null>(null)
 
   // Detect desktop
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function HomePage() {
         setLoadingLocation(false)
         setLocationError(null)
         setIsTracking(true)
+        lastLocationRef.current = coords
       },
       (err) => {
         console.error("Error getting location:", err)
@@ -118,14 +121,44 @@ export default function HomePage() {
     }
   }, [requestLocationPermission])
 
-  // Handle location updates from map
+  // Handle location updates from map - check for significant changes
   const handleLocationUpdate = useCallback((newLocation: Coordinates) => {
+    if (lastLocationRef.current) {
+      // Calculate distance moved (in meters)
+      const R = 6371e3
+      const φ1 = lastLocationRef.current.lat * Math.PI / 180
+      const φ2 = newLocation.lat * Math.PI / 180
+      const Δφ = (newLocation.lat - lastLocationRef.current.lat) * Math.PI / 180
+      const Δλ = (newLocation.lng - lastLocationRef.current.lng) * Math.PI / 180
+
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      const distance = R * c
+
+      // Only show update button if moved more than 100 meters
+      if (distance > 100) {
+        setLocationChanged(true)
+      }
+    }
     setUserLocation(newLocation)
   }, [])
 
+  // Update location and refresh shelters
+  const handleLocationRefresh = useCallback(() => {
+    setLocationChanged(false)
+    if (userLocation) {
+      lastLocationRef.current = userLocation
+      // Force refresh shelters
+      setNearbyShelters([])
+      setAllShelters([])
+    }
+  }, [userLocation])
+
   // Fetch shelters when user location is available or changes
   useEffect(() => {
-    if (!userLocation) return
+    if (!userLocation || locationChanged) return
 
     const fetchShelters = async () => {
       setLoadingShelters(true)
@@ -187,7 +220,7 @@ export default function HomePage() {
     }
 
     fetchShelters()
-  }, [userLocation])
+  }, [userLocation, locationChanged])
 
   const isInitialLoading = loadingLocation && !userLocation && !locationError
 
@@ -200,7 +233,7 @@ export default function HomePage() {
         {isDesktop && (
           <>
             {/* Left Panel for Desktop */}
-            <div className="w-[400px] h-full bg-black/90 border-r border-red-500/30 overflow-hidden flex flex-col">
+            <div className="w-[400px] h-full bg-transparent overflow-hidden flex flex-col">
               <ShelterPanel
                 shelters={nearbyShelters}
                 isLoading={loadingLocation || loadingShelters}
@@ -244,6 +277,17 @@ export default function HomePage() {
               isDesktopPanel={false}
             />
           </>
+        )}
+
+        {/* Location update button */}
+        {locationChanged && !loadingLocation && (
+          <Button
+            onClick={handleLocationRefresh}
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-30 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full shadow-lg flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            UPDATE LOCATION
+          </Button>
         )}
 
         {/* Location permission prompt overlay */}

@@ -1,19 +1,44 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Geist } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { Metadata, Viewport } from 'next'
 
-const inter = Inter({ subsets: ["latin"] })
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: "ShelterNow",
-  description: "Find nearby shelters quickly.",
+  title: "SHELTER NOW - Bomb Shelter Locator",
+  description: "Emergency bomb shelter locator for Israel - Find the nearest shelter in seconds",
   manifest: "/manifest.json",
-  themeColor: "#171717", // Dark theme color for PWA
-  appleWebAppCapable: "yes",
-  appleWebAppStatusBarStyle: "black-translucent",
-    generator: 'v0.dev'
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SHELTER NOW",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    title: "SHELTER NOW - Bomb Shelter Locator",
+    description: "Emergency bomb shelter locator for Israel",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SHELTER NOW - Bomb Shelter Locator",
+    description: "Emergency bomb shelter locator for Israel",
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#DC2626',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -22,22 +47,24 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className={geistSans.variable}>
       <head>
-        {/* eslint-disable-next-line @next/next/no-css-tags */}
-        <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin=""
-        />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={`${inter.className} bg-background text-foreground antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
+      <body className="font-sans antialiased">
+        {children}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+              });
+            }
+          `
+        }} />
       </body>
     </html>
   )

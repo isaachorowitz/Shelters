@@ -37,7 +37,7 @@ BEGIN
     s.type,
     ST_Y(s.geom) as lat,
     ST_X(s.geom) as lon,
-    ST_Distance(s.geom, ST_SetSRID(ST_MakePoint(user_lng, user_lat), 4326)) as meters
+    ST_DistanceSphere(s.geom, ST_SetSRID(ST_MakePoint(user_lng, user_lat), 4326)) as meters
   FROM shelters s
   ORDER BY s.geom <-> ST_SetSRID(ST_MakePoint(user_lng, user_lat), 4326)
   LIMIT result_limit;

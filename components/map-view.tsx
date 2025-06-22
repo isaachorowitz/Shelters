@@ -98,6 +98,9 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
   [33.3, 35.9]  // Northeast
 ]
 
+// Route colors for the 3 nearest shelters
+const ROUTE_COLORS = ['#ef4444', '#f97316', '#eab308'] // red, orange, yellow
+
 function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap()
   useEffect(() => {
@@ -151,11 +154,38 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (location: C
   return null
 }
 
-export default function MapView({ userLocation, shelters, mapHeight = "100vh", onLocationUpdate }: MapViewProps) {
+export default function MapView({ 
+  userLocation, 
+  shelters, 
+  mapHeight = "100vh", 
+  onLocationUpdate,
+  nearbyShelters = [],
+  onShelterClick 
+}: MapViewProps) {
   // Default to Tel Aviv center
   const defaultCenter: LatLngExpression = [32.0853, 34.7818]
   const currentCenter: LatLngExpression = userLocation ? [userLocation.lat, userLocation.lng] : defaultCenter
   const currentZoom = userLocation ? 16 : 13
+
+  const handleNavigate = (shelter: Shelter) => {
+    if (shelter.coordinates) {
+      const destination = `${shelter.coordinates.lat},${shelter.coordinates.lng}`
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+      const isAndroid = /Android/.test(navigator.userAgent)
+      
+      let mapsUrl
+      if (isIOS) {
+        mapsUrl = `maps://?daddr=${destination}&dirflg=w`
+      } else if (isAndroid) {
+        mapsUrl = `google.navigation:q=${destination}&mode=w`
+      } else {
+        const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : ''
+        mapsUrl = `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ''}&destination=${destination}&travelmode=walking`
+      }
+
+      window.open(mapsUrl, "_blank", "noopener,noreferrer")
+    }
+  }
 
   // Add CSS for pulse animation
   useEffect(() => {
@@ -177,6 +207,9 @@ export default function MapView({ userLocation, shelters, mapHeight = "100vh", o
       }
       .leaflet-container {
         background: #0a0a0a;
+      }
+      .shelter-marker {
+        z-index: 1000 !important;
       }
     `
     document.head.appendChild(style)
@@ -207,6 +240,21 @@ export default function MapView({ userLocation, shelters, mapHeight = "100vh", o
           minZoom={7}
         />
         
+        {/* Draw routes to nearest 3 shelters */}
+        {userLocation && nearbyShelters.slice(0, 3).map((shelter, index) => (
+          <Polyline
+            key={`route-${shelter.id}`}
+            positions={[
+              [userLocation.lat, userLocation.lng],
+              [shelter.coordinates.lat, shelter.coordinates.lng]
+            ]}
+            color={ROUTE_COLORS[index]}
+            weight={3}
+            opacity={0.7}
+            dashArray="10, 10"
+          />
+        ))}
+        
         {/* User location with accuracy circle */}
         {userLocation && (
           <>
@@ -233,28 +281,60 @@ export default function MapView({ userLocation, shelters, mapHeight = "100vh", o
         )}
         
         {/* Bomb shelter markers */}
-        {shelters.map((shelter) => (
-          <Marker 
-            key={shelter.id} 
-            position={[shelter.coordinates.lat, shelter.coordinates.lng]}
-            icon={shelterIcon}
-          >
-            <Popup>
-              <div className="text-sm font-bold">
-                <div className="flex items-center gap-1 mb-1">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <strong className="text-base">{shelter.name}</strong>
-                </div>
-                <div className="text-red-600 font-bold uppercase">{shelter.type} SHELTER</div>
-                {shelter.distance && (
-                  <div className="text-gray-700 mt-1 font-semibold">
-                    {(shelter.distance / 1000).toFixed(1)} km away
+        {shelters.map((shelter) => {
+          const isNearby = nearbyShelters.some(ns => ns.id === shelter.id)
+          const nearbyIndex = nearbyShelters.findIndex(ns => ns.id === shelter.id)
+          
+          return (
+            <Marker 
+              key={shelter.id} 
+              position={[shelter.coordinates.lat, shelter.coordinates.lng]}
+              icon={shelterIcon}
+              eventHandlers={{
+                click: () => {
+                  if (onShelterClick) {
+                    onShelterClick(shelter)
+                  }
+                }
+              }}
+            >
+              <Popup>
+                <div className="text-sm font-bold min-w-[200px]">
+                  <div className="flex items-center gap-1 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <strong className="text-base">{shelter.name}</strong>
                   </div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+                  <div className="text-red-600 font-bold uppercase mb-2">{shelter.type} SHELTER</div>
+                  {shelter.distance && (
+                    <>
+                      <div className="text-gray-700 font-semibold mb-1">
+                        Distance: {(shelter.distance / 1000).toFixed(1)} km
+                      </div>
+                      {shelter.etas && (
+                        <div className="text-gray-600 text-xs mb-3">
+                          Walk: {shelter.etas.walk} | Run: {shelter.etas.run}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {isNearby && nearbyIndex < 3 && (
+                    <div className="mb-2 px-2 py-1 rounded text-xs font-bold text-white text-center"
+                         style={{ backgroundColor: ROUTE_COLORS[nearbyIndex] }}>
+                      #{nearbyIndex + 1} NEAREST
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => handleNavigate(shelter)}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 text-sm rounded-lg"
+                  >
+                    <Navigation className="mr-1 h-4 w-4" />
+                    GET DIRECTIONS
+                  </Button>
+                </div>
+              </Popup>
+            </Marker>
+          )
+        })}
       </MapContainer>
     </div>
   )

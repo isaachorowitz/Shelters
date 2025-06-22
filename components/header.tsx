@@ -4,42 +4,41 @@ import { Shield, AlertTriangle } from "lucide-react"
 import { useEffect, useState } from "react"
 
 export default function Header() {
-  const [isAlert, setIsAlert] = useState(false)
-
+  const [isAlertActive, setIsAlertActive] = useState(true)
+  
   useEffect(() => {
-    // Simulate alert state changes
+    // Pulse animation for alert state
     const interval = setInterval(() => {
-      setIsAlert(prev => !prev)
-    }, 3000)
+      setIsAlertActive(prev => !prev)
+    }, 2000)
+    
     return () => clearInterval(interval)
   }, [])
-
+  
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-3 h-[56px] bg-black/80 backdrop-blur-xl text-white shadow-lg border-b border-red-500/30">
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Shield className={`h-8 w-8 ${isAlert ? 'text-red-500' : 'text-red-600'} transition-colors duration-300`} />
-          {isAlert && (
-            <div className="absolute inset-0 h-8 w-8 animate-ping">
-              <Shield className="h-8 w-8 text-red-500/50" />
-            </div>
-          )}
-        </div>
-        <div>
-          <h1 className="text-xl font-black tracking-tight">SHELTER NOW</h1>
-          <p className="text-xs text-red-400 font-bold -mt-1">BOMB SHELTER LOCATOR</p>
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        {isAlert && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-red-600/20 border border-red-500/50 rounded-full animate-pulse">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            <span className="text-xs font-bold text-red-500">ALERT ACTIVE</span>
+    <header className="fixed top-0 left-0 right-0 z-40 h-14 bg-black/80 backdrop-blur-xl border-b border-red-500/50">
+      <div className="flex items-center justify-between h-full px-4">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Shield className={`h-8 w-8 text-red-500 transition-all ${isAlertActive ? 'scale-110' : 'scale-100'}`} />
+            {isAlertActive && (
+              <div className="absolute inset-0 h-8 w-8 animate-ping">
+                <Shield className="h-8 w-8 text-red-500/50" />
+              </div>
+            )}
           </div>
-        )}
-        <div className="text-xs font-mono text-white/70">
-          {new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          <div className="flex flex-col">
+            <h1 className="text-lg font-black text-white tracking-wider leading-none">SHELTER NOW</h1>
+            <p className="text-[10px] text-red-400 font-bold tracking-widest uppercase">Bomb Shelter Locator</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${isAlertActive ? 'bg-red-600/20' : 'bg-red-600/10'} border border-red-500/50 transition-all`}>
+            <div className={`w-2 h-2 rounded-full ${isAlertActive ? 'bg-red-500' : 'bg-red-400'} animate-pulse`} />
+            <span className="text-xs font-bold text-red-400">ACTIVE</span>
+          </div>
+          <AlertTriangle className="h-5 w-5 text-amber-500 animate-pulse hidden sm:block" />
         </div>
       </div>
     </header>

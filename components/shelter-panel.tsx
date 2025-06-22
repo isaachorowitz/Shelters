@@ -38,7 +38,7 @@ export default function ShelterPanel({ shelters, isLoading, hasLocationError, us
   // Desktop panel is always expanded and has different styling
   if (isDesktopPanel) {
     return (
-      <div className="h-full flex flex-col bg-black/90">
+      <div className="h-full w-full bg-black/90 backdrop-blur-xl rounded-2xl border-2 border-red-500/30 shadow-2xl overflow-hidden m-4">
         <div className="flex items-center justify-between bg-black/60 backdrop-blur-xl py-4 px-6 border-b border-red-500/30">
           <h2 className="text-2xl font-black text-white flex items-center gap-2">
             <Shield className="h-8 w-8 text-red-500" />
@@ -84,9 +84,9 @@ export default function ShelterPanel({ shelters, isLoading, hasLocationError, us
     )
   }
 
-  // Mobile panel layout
+  // Mobile panel layout - adjusted height to prevent cutoff
   const panelHeightClass = isExpanded 
-    ? (isMobile ? "h-[65vh]" : "h-[50vh] max-h-[500px]")
+    ? (isMobile ? "h-[60vh] max-h-[calc(100vh-120px)]" : "h-[50vh] max-h-[500px]")
     : "h-[80px]"
 
   const userHasRealDistance = (s: Shelter[]) => s.some((sh) => sh.distance !== undefined)
@@ -127,7 +127,7 @@ export default function ShelterPanel({ shelters, isLoading, hasLocationError, us
     )
   } else {
     content = (
-      <div className="space-y-3">
+      <div className="space-y-3 pb-4">
         {shelters.map((shelter) => (
           <ShelterCard key={shelter.id} shelter={shelter} userLocation={userLocation} />
         ))}

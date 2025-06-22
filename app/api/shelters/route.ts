@@ -104,14 +104,23 @@ export async function GET(request: NextRequest) {
 
     if (!rpcError && rpcData) {
       // Transform the data to ensure consistent format
-      const shelters: ShelterResponse[] = rpcData.map((shelter: any) => ({
-        id: shelter.id,
-        name: shelter.name,
-        type: shelter.type,
-        lat: shelter.lat,
-        lng: shelter.lon || shelter.lng,
-        meters: shelter.meters
-      }))
+      const shelters: ShelterResponse[] = rpcData.map((shelter: any) => {
+        // If meters value is too small (likely in degrees), recalculate
+        let distance = shelter.meters
+        if (distance < 1) {
+          // Likely in degrees, recalculate using Haversine
+          distance = calculateDistance(latNum, lngNum, shelter.lat, shelter.lon || shelter.lng)
+        }
+        
+        return {
+          id: shelter.id,
+          name: shelter.name,
+          type: shelter.type,
+          lat: shelter.lat,
+          lng: shelter.lon || shelter.lng,
+          meters: distance
+        }
+      })
 
       return NextResponse.json({ shelters })
     }

@@ -1,27 +1,48 @@
 {
-  "name": "ShelterNow",
-  "short_name": "ShelterNow",
-  "description": "Find nearby shelters quickly.",
+  "name": "SHELTER NOW - Bomb Shelter Locator",
+  "short_name": "SHELTER NOW",
+  "description": "Emergency bomb shelter locator for Israel - Find the nearest shelter in seconds",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#171717",
-  "theme_color": "#171717",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#DC2626",
+  "categories": ["emergency", "navigation", "safety"],
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/maskable-icon.png",
-      "sizes": "196x196",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Find Nearest Shelter",
+      "short_name": "Find Shelter",
+      "description": "Locate the nearest bomb shelter immediately",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
