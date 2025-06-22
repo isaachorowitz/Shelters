@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline } from "react-leaflet"
 import type { LatLngExpression, LatLngBoundsExpression } from "leaflet"
 import L from "leaflet"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import type { Shelter, Coordinates } from "@/lib/types"
 import { AlertTriangle, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -39,6 +39,7 @@ const shelterIcon = L.divIcon({
         align-items: center;
         justify-content: center;
         box-shadow: 0 4px 12px rgba(220, 38, 38, 0.6);
+        cursor: pointer;
       ">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
           <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
@@ -114,17 +115,46 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
 
 function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (location: Coordinates) => void }) {
   const map = useMap()
+  const lastLocationRef = useRef<Coordinates | null>(null)
+  const watchIdRef = useRef<number | null>(null)
   
   useEffect(() => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation || !onLocationUpdate) return
+
+    // Clear any existing watch
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current)
+    }
 
     // Watch position for real-time updates
-    const watchId = navigator.geolocation.watchPosition(
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const newLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         }
+        
+        // Only update if we've moved more than 10 meters
+        if (lastLocationRef.current) {
+          const R = 6371e3 // Earth's radius in meters
+          const φ1 = lastLocationRef.current.lat * Math.PI / 180
+          const φ2 = newLocation.lat * Math.PI / 180
+          const Δφ = (newLocation.lat - lastLocationRef.current.lat) * Math.PI / 180
+          const Δλ = (newLocation.lng - lastLocationRef.current.lng) * Math.PI / 180
+
+          const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+          const distance = R * c
+
+          // Only update if moved more than 10 meters
+          if (distance < 10) {
+            return
+          }
+        }
+        
+        lastLocationRef.current = newLocation
         
         // Update map center smoothly
         map.flyTo([newLocation.lat, newLocation.lng], map.getZoom(), {
@@ -132,22 +162,23 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (location: C
         })
         
         // Notify parent component
-        if (onLocationUpdate) {
-          onLocationUpdate(newLocation)
-        }
+        onLocationUpdate(newLocation)
       },
       (error) => {
         console.error("Location tracking error:", error)
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
+        maximumAge: 30000, // Accept cached positions up to 30 seconds old
+        timeout: 10000 // Increase timeout to 10 seconds
       }
     )
 
     return () => {
-      navigator.geolocation.clearWatch(watchId)
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
     }
   }, [map, onLocationUpdate])
 
@@ -312,7 +343,7 @@ export default function MapView({
                       </div>
                       {shelter.etas && (
                         <div className="text-gray-600 text-xs mb-3">
-                          Walk: {shelter.etas.walk} | Run: {shelter.etas.run}
+                          Walk: {shelter.etas.walk}m | Run: {shelter.etas.run}m
                         </div>
                       )}
                     </>

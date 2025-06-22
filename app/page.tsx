@@ -45,6 +45,7 @@ export default function HomePage() {
   const [isDesktop, setIsDesktop] = useState(false)
   const [locationChanged, setLocationChanged] = useState(false)
   const lastLocationRef = useRef<Coordinates | null>(null)
+  const locationUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Detect desktop
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function HomePage() {
       setUserLocation(TEST_LOCATION)
       setLoadingLocation(false)
       setIsTracking(true)
+      lastLocationRef.current = TEST_LOCATION
       return
     }
   }, [])
@@ -121,28 +123,47 @@ export default function HomePage() {
     }
   }, [requestLocationPermission])
 
-  // Handle location updates from map - check for significant changes
+  // Handle location updates from map with debouncing
   const handleLocationUpdate = useCallback((newLocation: Coordinates) => {
-    if (lastLocationRef.current) {
-      // Calculate distance moved (in meters)
-      const R = 6371e3
-      const φ1 = lastLocationRef.current.lat * Math.PI / 180
-      const φ2 = newLocation.lat * Math.PI / 180
-      const Δφ = (newLocation.lat - lastLocationRef.current.lat) * Math.PI / 180
-      const Δλ = (newLocation.lng - lastLocationRef.current.lng) * Math.PI / 180
+    // Clear any pending timeout
+    if (locationUpdateTimeoutRef.current) {
+      clearTimeout(locationUpdateTimeoutRef.current)
+    }
 
-      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      const distance = R * c
+    // Update the user location immediately for UI responsiveness
+    setUserLocation(newLocation)
 
-      // Only show update button if moved more than 100 meters
-      if (distance > 100) {
-        setLocationChanged(true)
+    // Debounce the location change detection
+    locationUpdateTimeoutRef.current = setTimeout(() => {
+      if (lastLocationRef.current) {
+        // Calculate distance moved (in meters)
+        const R = 6371e3
+        const φ1 = lastLocationRef.current.lat * Math.PI / 180
+        const φ2 = newLocation.lat * Math.PI / 180
+        const Δφ = (newLocation.lat - lastLocationRef.current.lat) * Math.PI / 180
+        const Δλ = (newLocation.lng - lastLocationRef.current.lng) * Math.PI / 180
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        const distance = R * c
+
+        // Only show update button if moved more than 100 meters
+        if (distance > 100) {
+          setLocationChanged(true)
+        }
+      }
+    }, 2000) // Wait 2 seconds before checking if we should show the update button
+  }, [])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (locationUpdateTimeoutRef.current) {
+        clearTimeout(locationUpdateTimeoutRef.current)
       }
     }
-    setUserLocation(newLocation)
   }, [])
 
   // Update location and refresh shelters
