@@ -228,55 +228,39 @@ export default function HomePage() {
     <div className="relative flex flex-col h-screen overflow-hidden bg-black">
       <Header />
 
-      <main className="flex-1 pt-[56px] relative flex">
-        {/* Desktop Layout */}
-        {isDesktop && (
-          <>
-            {/* Left Panel for Desktop */}
-            <div className="w-[400px] h-full bg-transparent overflow-hidden flex flex-col">
-              <ShelterPanel
-                shelters={nearbyShelters}
-                isLoading={loadingLocation || loadingShelters}
-                hasLocationError={!!locationError}
-                userLocation={userLocation}
-                isDesktopPanel={true}
-              />
-            </div>
-            
-            {/* Map takes remaining space on desktop */}
-            <div className="flex-1 relative">
-              <MapView
-                userLocation={userLocation}
-                shelters={allShelters}
-                mapHeight="100%"
-                onLocationUpdate={isTracking ? handleLocationUpdate : undefined}
-                nearbyShelters={nearbyShelters.slice(0, 3)}
-                onShelterClick={setSelectedShelter}
-              />
-            </div>
-          </>
-        )}
+      <main className="flex-1 pt-[56px] relative">
+        {/* Map takes full space */}
+        <MapView
+          userLocation={userLocation}
+          shelters={allShelters}
+          mapHeight="100%"
+          onLocationUpdate={isTracking ? handleLocationUpdate : undefined}
+          nearbyShelters={nearbyShelters.slice(0, 3)}
+          onShelterClick={setSelectedShelter}
+        />
 
-        {/* Mobile Layout */}
-        {!isDesktop && (
-          <>
-            <MapView
-              userLocation={userLocation}
-              shelters={allShelters}
-              mapHeight="calc(100vh - 56px)"
-              onLocationUpdate={isTracking ? handleLocationUpdate : undefined}
-              nearbyShelters={nearbyShelters.slice(0, 3)}
-              onShelterClick={setSelectedShelter}
-            />
-            
+        {/* Desktop floating panel */}
+        {isDesktop && (
+          <div className="absolute top-[72px] left-4 bottom-4 w-[400px] max-w-[calc(100vw-32px)] z-20">
             <ShelterPanel
               shelters={nearbyShelters}
               isLoading={loadingLocation || loadingShelters}
               hasLocationError={!!locationError}
               userLocation={userLocation}
-              isDesktopPanel={false}
+              isDesktopPanel={true}
             />
-          </>
+          </div>
+        )}
+
+        {/* Mobile bottom panel */}
+        {!isDesktop && (
+          <ShelterPanel
+            shelters={nearbyShelters}
+            isLoading={loadingLocation || loadingShelters}
+            hasLocationError={!!locationError}
+            userLocation={userLocation}
+            isDesktopPanel={false}
+          />
         )}
 
         {/* Location update button */}
