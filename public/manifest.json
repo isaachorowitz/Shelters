@@ -8,6 +8,7 @@
   "background_color": "#000000",
   "theme_color": "#DC2626",
   "categories": ["emergency", "navigation", "safety"],
+  "permissions": ["geolocation"],
   "icons": [
     {
       "src": "/icon-192.png",

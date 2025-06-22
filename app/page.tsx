@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import Header from "@/components/header"
 import ShelterPanel from "@/components/shelter-panel"
-import { Loader2, MapPin, Shield, RefreshCw } from "lucide-react"
+import { Loader2, MapPin, Shield, RefreshCw, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -44,15 +44,26 @@ export default function HomePage() {
   const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(null)
   const [isDesktop, setIsDesktop] = useState(false)
   const [locationChanged, setLocationChanged] = useState(false)
+  const [isPWA, setIsPWA] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const lastLocationRef = useRef<Coordinates | null>(null)
   const locationUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Detect desktop
+  // Detect desktop and PWA mode
   useEffect(() => {
     const checkDesktop = () => {
       setIsDesktop(window.innerWidth >= 1024)
     }
+    
+    // Check if running as PWA
+    const checkPWA = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      const isIosPwa = (window.navigator as any).standalone === true
+      setIsPWA(isStandalone || isIosPwa)
+    }
+    
     checkDesktop()
+    checkPWA()
     window.addEventListener('resize', checkDesktop)
     return () => window.removeEventListener('resize', checkDesktop)
   }, [])
@@ -69,8 +80,8 @@ export default function HomePage() {
     }
   }, [])
 
-  // Request location permission
-  const requestLocationPermission = useCallback(() => {
+  // Request location permission with better error handling
+  const requestLocationPermission = useCallback(async () => {
     setLoadingLocation(true)
     setLocationError(null)
     setPermissionDenied(false)
@@ -81,8 +92,33 @@ export default function HomePage() {
       return
     }
 
+    // For PWA, check permission state first
+    if (isPWA && 'permissions' in navigator) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' })
+        console.log('Permission state:', permission.state)
+        
+        if (permission.state === 'denied') {
+          setPermissionDenied(true)
+          setLocationError("Location access denied. Please enable in your device settings.")
+          setLoadingLocation(false)
+          return
+        }
+      } catch (e) {
+        console.error('Permission query failed:', e)
+      }
+    }
+
+    // Try to get current position with timeout
+    const timeoutId = setTimeout(() => {
+      setLoadingLocation(false)
+      setLocationError("Location request timed out. Please try again.")
+      setRetryCount(prev => prev + 1)
+    }, 15000)
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        clearTimeout(timeoutId)
         const coords: Coordinates = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -92,29 +128,36 @@ export default function HomePage() {
         setLocationError(null)
         setIsTracking(true)
         lastLocationRef.current = coords
+        setRetryCount(0)
       },
       (err) => {
+        clearTimeout(timeoutId)
         console.error("Error getting location:", err)
         setLoadingLocation(false)
+        setRetryCount(prev => prev + 1)
         
         if (err.code === 1) { // Permission denied
           setPermissionDenied(true)
-          setLocationError("Location access denied. Enable location to find bomb shelters.")
+          if (isPWA) {
+            setLocationError("Location blocked. Open this link in Safari/Chrome to enable location, then return to the app.")
+          } else {
+            setLocationError("Location access denied. Enable location to find bomb shelters.")
+          }
         } else if (err.code === 2) { // Position unavailable
-          setLocationError("Unable to determine location. Check device settings.")
+          setLocationError("Unable to determine location. Make sure location services are enabled.")
         } else if (err.code === 3) { // Timeout
-          setLocationError("Location request timed out. Try again.")
+          setLocationError("Location request timed out. Please try again.")
         } else {
-          setLocationError("Unable to retrieve location. Enable location services.")
+          setLocationError("Unable to retrieve location. Please check your settings.")
         }
       },
       { 
         enableHighAccuracy: true, 
-        timeout: 10000, 
+        timeout: 15000,
         maximumAge: 0 
       }
     )
-  }, [])
+  }, [isPWA, retryCount])
 
   // Initial location request (only in production)
   useEffect(() => {
@@ -176,6 +219,12 @@ export default function HomePage() {
       setAllShelters([])
     }
   }, [userLocation])
+
+  // Open in browser for PWA permission issues
+  const openInBrowser = () => {
+    const currentUrl = window.location.href
+    window.open(currentUrl, '_blank')
+  }
 
   // Fetch shelters when user location is available or changes
   useEffect(() => {
@@ -305,16 +354,34 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-2xl font-black text-white mb-2">LOCATION REQUIRED</h3>
                 <p className="text-white/80 mb-6">
-                  Enable location services to find the nearest bomb shelters in case of emergency.
+                  {isPWA 
+                    ? "Location access is needed to find bomb shelters. You may need to enable it in your device settings."
+                    : "Enable location services to find the nearest bomb shelters in case of emergency."
+                  }
                 </p>
-                <Button 
-                  onClick={requestLocationPermission}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg rounded-xl"
-                >
-                  ENABLE LOCATION NOW
-                </Button>
+                <div className="space-y-3">
+                  <Button 
+                    onClick={requestLocationPermission}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg rounded-xl"
+                  >
+                    {retryCount > 0 ? 'TRY AGAIN' : 'ENABLE LOCATION NOW'}
+                  </Button>
+                  {isPWA && retryCount > 1 && (
+                    <Button 
+                      onClick={openInBrowser}
+                      variant="outline"
+                      className="w-full border-red-500/50 text-white hover:bg-red-900/20 font-bold py-4 text-sm rounded-xl"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      OPEN IN BROWSER
+                    </Button>
+                  )}
+                </div>
                 <p className="text-xs text-white/50 mt-4">
-                  Your location is used only for emergency shelter navigation.
+                  {isPWA && retryCount > 0
+                    ? "If location isn't working, try opening in your browser to grant permission."
+                    : "Your location is used only for emergency shelter navigation."
+                  }
                 </p>
               </div>
             </div>
