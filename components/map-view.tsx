@@ -1,11 +1,12 @@
 "use client"
 
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline } from "react-leaflet"
 import type { LatLngExpression, LatLngBoundsExpression } from "leaflet"
 import L from "leaflet"
 import { useEffect, useState } from "react"
 import type { Shelter, Coordinates } from "@/lib/types"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Navigation } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 // Import Leaflet's CSS (already in layout, but good for component encapsulation if moved)
 // import 'leaflet/dist/leaflet.css';
@@ -87,6 +88,8 @@ interface MapViewProps {
   shelters: Shelter[]
   mapHeight?: string
   onLocationUpdate?: (location: Coordinates) => void
+  nearbyShelters?: Shelter[]
+  onShelterClick?: (shelter: Shelter) => void
 }
 
 // Israel bounds to restrict map view

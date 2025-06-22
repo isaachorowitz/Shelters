@@ -11,6 +11,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { Shelter, Coordinates } from "@/lib/types"
 import { calculateEtas } from "@/lib/utils"
 
+// Test location in Tel Aviv
+const TEST_LOCATION: Coordinates = {
+  lat: 32.08771237463072,
+  lng: 34.77489252878912
+}
+
 const MapView = dynamic(() => import("@/components/map-view"), {
   ssr: false,
   loading: () => (
@@ -35,6 +41,29 @@ export default function HomePage() {
   const [locationError, setLocationError] = useState<string | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [isTracking, setIsTracking] = useState(false)
+  const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(null)
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  // Detect desktop
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
+
+  // Use test location for development
+  useEffect(() => {
+    // For development, use test location immediately
+    if (process.env.NODE_ENV === 'development') {
+      setUserLocation(TEST_LOCATION)
+      setLoadingLocation(false)
+      setIsTracking(true)
+      return
+    }
+  }, [])
 
   // Request location permission
   const requestLocationPermission = useCallback(() => {
@@ -82,9 +111,11 @@ export default function HomePage() {
     )
   }, [])
 
-  // Initial location request
+  // Initial location request (only in production)
   useEffect(() => {
-    requestLocationPermission()
+    if (process.env.NODE_ENV !== 'development') {
+      requestLocationPermission()
+    }
   }, [requestLocationPermission])
 
   // Handle location updates from map
@@ -164,14 +195,56 @@ export default function HomePage() {
     <div className="relative flex flex-col h-screen overflow-hidden bg-black">
       <Header />
 
-      <main className="flex-1 pt-[56px] relative">
-        {/* Map is always visible */}
-        <MapView
-          userLocation={userLocation}
-          shelters={allShelters}
-          mapHeight="calc(100vh - 56px)"
-          onLocationUpdate={isTracking ? handleLocationUpdate : undefined}
-        />
+      <main className="flex-1 pt-[56px] relative flex">
+        {/* Desktop Layout */}
+        {isDesktop && (
+          <>
+            {/* Left Panel for Desktop */}
+            <div className="w-[400px] h-full bg-black/90 border-r border-red-500/30 overflow-hidden flex flex-col">
+              <ShelterPanel
+                shelters={nearbyShelters}
+                isLoading={loadingLocation || loadingShelters}
+                hasLocationError={!!locationError}
+                userLocation={userLocation}
+                isDesktopPanel={true}
+              />
+            </div>
+            
+            {/* Map takes remaining space on desktop */}
+            <div className="flex-1 relative">
+              <MapView
+                userLocation={userLocation}
+                shelters={allShelters}
+                mapHeight="100%"
+                onLocationUpdate={isTracking ? handleLocationUpdate : undefined}
+                nearbyShelters={nearbyShelters.slice(0, 3)}
+                onShelterClick={setSelectedShelter}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Mobile Layout */}
+        {!isDesktop && (
+          <>
+            <MapView
+              userLocation={userLocation}
+              shelters={allShelters}
+              mapHeight="calc(100vh - 56px)"
+              onLocationUpdate={isTracking ? handleLocationUpdate : undefined}
+              nearbyShelters={nearbyShelters.slice(0, 3)}
+              onShelterClick={setSelectedShelter}
+            />
+            
+            <ShelterPanel
+              shelters={nearbyShelters}
+              isLoading={loadingLocation || loadingShelters}
+              hasLocationError={!!locationError}
+              userLocation={userLocation}
+              isDesktopPanel={false}
+            />
+          </>
+        )}
 
         {/* Location permission prompt overlay */}
         {permissionDenied && !isInitialLoading && (
@@ -230,13 +303,6 @@ export default function HomePage() {
           </Alert>
         )}
       </main>
-
-      <ShelterPanel
-        shelters={nearbyShelters}
-        isLoading={loadingLocation || loadingShelters}
-        hasLocationError={!!locationError}
-        userLocation={userLocation}
-      />
     </div>
   )
 }

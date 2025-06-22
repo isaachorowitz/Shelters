@@ -11,9 +11,10 @@ interface ShelterPanelProps {
   isLoading: boolean
   hasLocationError: boolean
   userLocation?: Coordinates | null
+  isDesktopPanel?: boolean
 }
 
-export default function ShelterPanel({ shelters, isLoading, hasLocationError, userLocation }: ShelterPanelProps) {
+export default function ShelterPanel({ shelters, isLoading, hasLocationError, userLocation, isDesktopPanel = false }: ShelterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -34,6 +35,56 @@ export default function ShelterPanel({ shelters, isLoading, hasLocationError, us
     }
   }, [isLoading, shelters.length])
 
+  // Desktop panel is always expanded and has different styling
+  if (isDesktopPanel) {
+    return (
+      <div className="h-full flex flex-col bg-black/90">
+        <div className="flex items-center justify-between bg-black/60 backdrop-blur-xl py-4 px-6 border-b border-red-500/30">
+          <h2 className="text-2xl font-black text-white flex items-center gap-2">
+            <Shield className="h-8 w-8 text-red-500" />
+            {isLoading ? "SCANNING..." : "NEAREST BOMB SHELTERS"}
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-red-600/50 scrollbar-track-black/50 p-6">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-white text-center">
+              <div className="relative">
+                <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+                <div className="absolute inset-0 h-12 w-12 animate-ping">
+                  <Loader2 className="h-12 w-12 text-red-500/50" />
+                </div>
+              </div>
+              <p className="text-xl font-bold mt-4">LOCATING NEAREST BOMB SHELTERS</p>
+              <p className="text-sm text-white/70">Stand by...</p>
+            </div>
+          ) : hasLocationError && shelters.every((s) => s.distance === undefined) ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-white">
+              <AlertTriangle className="h-12 w-12 text-amber-400 animate-pulse mb-3" />
+              <p className="text-xl font-bold">LOCATION ACCESS REQUIRED</p>
+              <p className="text-sm text-white/70 mt-2">
+                Enable location services to find bomb shelters near you
+              </p>
+            </div>
+          ) : shelters.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-white">
+              <Info className="h-12 w-12 text-sky-400 mb-3" />
+              <p className="text-xl font-bold">NO SHELTERS IN RANGE</p>
+              <p className="text-sm text-white/70">Move to a populated area</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {shelters.map((shelter) => (
+                <ShelterCard key={shelter.id} shelter={shelter} userLocation={userLocation} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile panel layout
   const panelHeightClass = isExpanded 
     ? (isMobile ? "h-[65vh]" : "h-[50vh] max-h-[500px]")
     : "h-[80px]"
