@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --radius: 0.5rem;
+  }
+  /* Ensure html, body take full height for sticky footer/panel behavior */
+  html,
+  body,
+  #__next {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Leaflet map container specific styles if needed */
+.leaflet-map-container {
+  /* Example: ensure tiles are not too bright if base map is light */
+  /* filter: brightness(0.9) contrast(1.1); */
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-neutral-800 text-white rounded-lg shadow-xl border border-neutral-700/80; /* Enhanced shadow and border */
+  backdrop-filter: blur(5px); /* Optional: subtle blur for content behind popup */
+}
+.leaflet-popup-content {
+  @apply text-sm leading-relaxed; /* Improved line height */
+  margin: 12px !important; /* Slightly more padding */
+}
+.leaflet-popup-content strong {
+  @apply block mb-1 text-base font-semibold text-primary; /* Make title more prominent */
+}
+.leaflet-popup-tip {
+  @apply bg-neutral-800/80; /* Match wrapper, potentially with more transparency */
+  border-bottom-color: transparent !important; /* Ensure tip color matches */
+}
+.leaflet-control-attribution {
+  @apply text-xs;
+  font-size: 0.7rem !important; /* Slightly smaller for less intrusion */
+  background: rgba(10, 10, 10, 0.7) !important; /* Darker, more translucent */
+  color: #bbb !important;
+  padding: 2px 5px !important;
+  border-radius: 4px;
+}
+.leaflet-control-zoom a {
+  @apply bg-neutral-800 text-white border-neutral-700 hover:bg-neutral-700;
+}
+.leaflet-control-zoom a:hover {
+  @apply bg-neutral-700 text-white;
+}
+
+/* Custom scrollbar for panel */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent; /* Or specific colors */
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--muted);
+  border-radius: 3px;
+}
