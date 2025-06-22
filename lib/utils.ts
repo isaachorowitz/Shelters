@@ -40,6 +40,47 @@ export function calculateEtas(distanceMeters: number): { run: number; walk: numb
     scooter: Math.round(distanceMeters / AVERAGE_SPEEDS_MPS.scooter / 60), // minutes
   }
 }
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Compute estimated time of arrival (ETA) based on distance and speed
+ * @param meters - Distance in meters
+ * @param speedKmh - Speed in kilometers per hour (default: 5 km/h for walking)
+ * @returns ETA in minutes
+ */
+export function computeEta(meters: number, speedKmh: number = 5): number {
+  if (meters <= 0 || speedKmh <= 0) return 0
+  
+  // Convert meters to kilometers
+  const kilometers = meters / 1000
+  
+  // Calculate time in hours
+  const hours = kilometers / speedKmh
+  
+  // Convert to minutes and round up
+  const minutes = Math.ceil(hours * 60)
+  
+  return minutes
+}
+
+/**
+ * Format ETA for display
+ * @param minutes - ETA in minutes
+ * @returns Formatted string (e.g., "5 min", "1 hr 30 min")
+ */
+export function formatEta(minutes: number): string {
+  if (minutes < 1) return "< 1 min"
+  if (minutes < 60) return `${minutes} min`
+  
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  
+  if (remainingMinutes === 0) {
+    return hours === 1 ? "1 hr" : `${hours} hrs`
+  }
+  
+  return `${hours} hr ${remainingMinutes} min`
 }
