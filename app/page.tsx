@@ -114,50 +114,58 @@ export default function HomePage() {
 
   // Request location permission
   const requestLocationPermission = useCallback(() => {
-    setLoadingLocation(true)
-    setLocationError(null)
-    setPermissionDenied(false)
+    console.log('[Geolocation] Requesting location permission...');
+    setLoadingLocation(true);
+    setLocationError(null);
+    setPermissionDenied(false);
 
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.")
-      setLoadingLocation(false)
-      return
+      console.error('[Geolocation] Geolocation is not supported by this browser.');
+      setLocationError("Geolocation is not supported by your browser.");
+      setLoadingLocation(false);
+      return;
     }
 
+    console.log('[Geolocation] Calling getCurrentPosition...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log('[Geolocation] Success:', position);
         const coords: Coordinates = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        }
-        setUserLocation(coords)
-        setLoadingLocation(false)
-        setLocationError(null)
-        setIsTracking(true)
-        lastLocationRef.current = coords
+        };
+        setUserLocation(coords);
+        setLoadingLocation(false);
+        setLocationError(null);
+        setIsTracking(true);
+        lastLocationRef.current = coords;
       },
       (err) => {
-        console.error("Error getting location:", err)
-        setLoadingLocation(false)
+        console.error("[Geolocation] Error:", err);
+        setLoadingLocation(false);
         
         if (err.code === 1) { // Permission denied
-          setPermissionDenied(true)
-          setLocationError("Location access denied. Enable location to find bomb shelters.")
+          console.error('[Geolocation] Permission denied.');
+          setPermissionDenied(true);
+          setLocationError("Location access denied. Enable location to find bomb shelters.");
         } else if (err.code === 2) { // Position unavailable
-          setLocationError("Unable to determine location. Check device settings.")
+          console.error('[Geolocation] Position unavailable.');
+          setLocationError("Unable to determine location. Check device settings.");
         } else if (err.code === 3) { // Timeout
-          setLocationError("Location request timed out. Try again.")
+          console.error('[Geolocation] Timeout.');
+          setLocationError("Location request timed out. Try again.");
         } else {
-          setLocationError("Unable to retrieve location. Enable location services.")
+          console.error('[Geolocation] Unknown error.');
+          setLocationError("Unable to retrieve location. Enable location services.");
         }
       },
       { 
         enableHighAccuracy: true, 
-        timeout: 10000, 
+        timeout: 15000, // Increased timeout to 15s
         maximumAge: 0 
       }
-    )
-  }, [])
+    );
+  }, []);
 
   // Initial location request (only in production)
   useEffect(() => {
