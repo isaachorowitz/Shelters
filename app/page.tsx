@@ -76,6 +76,18 @@ export default function HomePage() {
     console.log("HomePage mounted")
     console.log("Environment:", process.env.NODE_ENV)
     console.log("User Agent:", typeof window !== 'undefined' ? window.navigator.userAgent : 'SSR')
+    
+    // Add timeout to detect if map is stuck loading
+    const timeoutId = setTimeout(() => {
+      console.error("Map loading timeout - component may be stuck")
+      // Force a reload if map hasn't loaded after 30 seconds
+      if (document.querySelector('.leaflet-container') === null) {
+        console.error("No leaflet container found after 30s, forcing reload")
+        window.location.reload()
+      }
+    }, 30000)
+    
+    return () => clearTimeout(timeoutId)
   }, [])
 
   // Detect desktop

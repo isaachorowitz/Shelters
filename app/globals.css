@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Leaflet CSS */
-@import 'leaflet/dist/leaflet.css';
+/* Moved to layout.tsx for better loading reliability */
 
 @layer base {
   :root {
