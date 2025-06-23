@@ -17,20 +17,44 @@ const TEST_LOCATION: Coordinates = {
   lng: 34.77489252878912
 }
 
-const MapView = dynamic(() => import("@/components/map-view"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center h-full bg-black">
-      <div className="relative">
-        <Loader2 className="h-16 w-16 animate-spin text-red-500" />
-        <div className="absolute inset-0 h-16 w-16 animate-ping">
-          <Loader2 className="h-16 w-16 text-red-500/50" />
+const MapView = dynamic(
+  () => import("@/components/map-view").catch((err) => {
+    console.error("Failed to load MapView:", err)
+    // Return a fallback component
+    return {
+      default: () => (
+        <div className="flex flex-col items-center justify-center h-full bg-black text-white p-6">
+          <Shield className="h-16 w-16 text-red-500 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">MAP LOAD ERROR</h2>
+          <p className="text-sm mb-4">Unable to load map component</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="bg-red-600 hover:bg-red-700"
+          >
+            RELOAD PAGE
+          </Button>
         </div>
-      </div>
-      <p className="mt-4 text-white font-bold">INITIALIZING MAP...</p>
-    </div>
-  ),
-})
+      )
+    }
+  }),
+  {
+    ssr: false,
+    loading: () => {
+      console.log("MapView: Loading component...")
+      return (
+        <div className="flex flex-col items-center justify-center h-full bg-black">
+          <div className="relative">
+            <Loader2 className="h-16 w-16 animate-spin text-red-500" />
+            <div className="absolute inset-0 h-16 w-16 animate-ping">
+              <Loader2 className="h-16 w-16 text-red-500/50" />
+            </div>
+          </div>
+          <p className="mt-4 text-white font-bold">INITIALIZING MAP...</p>
+        </div>
+      )
+    }
+  }
+)
 
 export default function HomePage() {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null)
@@ -46,6 +70,13 @@ export default function HomePage() {
   const [locationChanged, setLocationChanged] = useState(false)
   const lastLocationRef = useRef<Coordinates | null>(null)
   const locationUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Add diagnostic logging
+  useEffect(() => {
+    console.log("HomePage mounted")
+    console.log("Environment:", process.env.NODE_ENV)
+    console.log("User Agent:", typeof window !== 'undefined' ? window.navigator.userAgent : 'SSR')
+  }, [])
 
   // Detect desktop
   useEffect(() => {
