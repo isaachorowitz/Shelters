@@ -12,13 +12,11 @@ import { Button } from "@/components/ui/button"
 // import 'leaflet/dist/leaflet.css';
 
 // Default icon fix for Next.js
-// These paths assume images are in public/leaflet-images/ or served correctly by leaflet package
-// For Next.js, direct CDN or properly configured public assets might be needed if imports fail.
-// Using unpkg for icon images as a robust solution for environments like Next.js.
+// Using local assets instead of external CDN to avoid CORS issues
 const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png", 
+  shadowUrl: "/leaflet/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -193,6 +191,8 @@ export default function MapView({
   nearbyShelters = [],
   onShelterClick 
 }: MapViewProps) {
+  const [mapError, setMapError] = useState<string | null>(null)
+  
   // Default to Tel Aviv center
   const defaultCenter: LatLngExpression = [32.0853, 34.7818]
   const currentCenter: LatLngExpression = userLocation ? [userLocation.lat, userLocation.lng] : defaultCenter
@@ -249,18 +249,39 @@ export default function MapView({
     }
   }, [])
 
-  return (
-    <div style={{ height: mapHeight, width: "100%" }} className="relative z-0 bg-black">
-      <MapContainer
-        center={currentCenter}
-        zoom={currentZoom}
-        scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%" }}
-        className="leaflet-map-container"
-        zoomControl={false}
-        maxBounds={ISRAEL_BOUNDS}
-        maxBoundsViscosity={1.0}
-      >
+  // Error boundary for map loading issues
+  if (mapError) {
+    return (
+      <div style={{ height: mapHeight, width: "100%" }} className="relative z-0 bg-black flex items-center justify-center">
+        <div className="text-center text-white p-6">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2">MAP LOADING ERROR</h3>
+          <p className="text-sm text-white/70 mb-4">{mapError}</p>
+          <Button 
+            onClick={() => setMapError(null)} 
+            className="bg-red-600 hover:bg-red-700 text-white font-bold"
+          >
+            RETRY MAP
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  try {
+    return (
+      <div style={{ height: mapHeight, width: "100%" }} className="relative z-0 bg-black">
+        <MapContainer
+          center={currentCenter}
+          zoom={currentZoom}
+          scrollWheelZoom={true}
+          style={{ height: "100%", width: "100%" }}
+          className="leaflet-map-container"
+          zoomControl={false}
+          maxBounds={ISRAEL_BOUNDS}
+          maxBoundsViscosity={1.0}
+          whenReady={() => setMapError(null)}
+        >
         <ChangeView center={currentCenter} zoom={currentZoom} />
         <LocationTracker onLocationUpdate={onLocationUpdate} />
         
@@ -269,6 +290,11 @@ export default function MapView({
           url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
           maxZoom={19}
           minZoom={7}
+          eventHandlers={{
+            tileerror: () => {
+              console.warn('Primary tile layer failed, consider fallback')
+            }
+          }}
         />
         
         {/* Draw routes to nearest 3 shelters */}
@@ -369,4 +395,22 @@ export default function MapView({
       </MapContainer>
     </div>
   )
+  } catch (error) {
+    console.error('Map rendering error:', error)
+    return (
+      <div style={{ height: mapHeight, width: "100%" }} className="relative z-0 bg-black flex items-center justify-center">
+        <div className="text-center text-white p-6">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2">MAP INITIALIZATION FAILED</h3>
+          <p className="text-sm text-white/70 mb-4">Unable to load map component</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="bg-red-600 hover:bg-red-700 text-white font-bold"
+          >
+            RELOAD PAGE
+          </Button>
+        </div>
+      </div>
+    )
+  }
 }
