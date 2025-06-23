@@ -102,14 +102,17 @@ export default function HomePage() {
 
   // Use test location for development
   useEffect(() => {
+    console.log('[Location] Environment check:', process.env.NODE_ENV);
     // For development, use test location immediately
     if (process.env.NODE_ENV === 'development') {
+      console.log('[Location] Using test location for development');
       setUserLocation(TEST_LOCATION)
       setLoadingLocation(false)
       setIsTracking(true)
       lastLocationRef.current = TEST_LOCATION
       return
     }
+    console.log('[Location] Production mode - will request real location');
   }, [])
 
   // Request location permission
@@ -169,8 +172,12 @@ export default function HomePage() {
 
   // Initial location request (only in production)
   useEffect(() => {
+    console.log('[Location] Initial location request effect triggered');
     if (process.env.NODE_ENV !== 'development') {
+      console.log('[Location] Calling requestLocationPermission()');
       requestLocationPermission()
+    } else {
+      console.log('[Location] Skipping location request in development');
     }
   }, [requestLocationPermission])
 

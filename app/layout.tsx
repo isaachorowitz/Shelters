@@ -61,6 +61,21 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            // Force unregister any service workers
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister().then(function(success) {
+                    if (success) console.log('[SW] Unregistered:', registration.scope);
+                  });
+                }
+              });
+            }
+            console.log('[Layout] Script executed at:', new Date().toISOString());
+          `
+        }} />
         {children}
       </body>
     </html>
