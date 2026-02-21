@@ -1,25 +1,24 @@
 import { Geist } from "next/font/google"
 import "./globals.css"
-import { Metadata, Viewport } from 'next'
+import type { Metadata, Viewport } from "next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: 'swap',
+  display: "swap",
 })
 
 export const metadata: Metadata = {
   title: "SHELTER NOW - Bomb Shelter Locator",
-  description: "Emergency bomb shelter locator for Israel - Find the nearest shelter in seconds",
+  description:
+    "Emergency bomb shelter locator for Israel - Find the nearest shelter in seconds",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "SHELTER NOW",
   },
-  formatDetection: {
-    telephone: false,
-  },
+  formatDetection: { telephone: false },
   openGraph: {
     title: "SHELTER NOW - Bomb Shelter Locator",
     description: "Emergency bomb shelter locator for Israel",
@@ -33,25 +32,26 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#DC2626',
-  viewportFit: 'cover',
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#DC2626",
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={geistSans.variable}>
+    <html lang="he" dir="ltr" className={geistSans.variable}>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="mobile-web-app-capable" content="yes" />
         <link
           rel="stylesheet"
@@ -60,24 +60,7 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className="font-sans antialiased">
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            // Force unregister any service workers
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                  registration.unregister().then(function(success) {
-                    if (success) console.log('[SW] Unregistered:', registration.scope);
-                  });
-                }
-              });
-            }
-            console.log('[Layout] Script executed at:', new Date().toISOString());
-          `
-        }} />
-        {children}
-      </body>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }

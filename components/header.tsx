@@ -1,44 +1,46 @@
 "use client"
 
-import { Shield, AlertTriangle } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Shield } from "lucide-react"
+import type { ReactNode } from "react"
 
-export default function Header() {
-  const [isAlertActive, setIsAlertActive] = useState(true)
-  
-  useEffect(() => {
-    // Pulse animation for alert state
-    const interval = setInterval(() => {
-      setIsAlertActive(prev => !prev)
-    }, 2000)
-    
-    return () => clearInterval(interval)
-  }, [])
-  
+interface HeaderProps {
+  children?: ReactNode
+}
+
+export default function Header({ children }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 h-14 bg-black/80 backdrop-blur-xl border-b border-red-500/50">
-      <div className="flex items-center justify-between h-full px-4">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Shield className={`h-8 w-8 text-red-500 transition-all ${isAlertActive ? 'scale-110' : 'scale-100'}`} />
-            {isAlertActive && (
-              <div className="absolute inset-0 h-8 w-8 animate-ping">
-                <Shield className="h-8 w-8 text-red-500/50" />
-              </div>
-            )}
+    <header
+      className="fixed top-0 left-0 right-0 z-40 h-14 bg-black/95 backdrop-blur-xl border-b border-red-500/30"
+      role="banner"
+    >
+      <div className="flex items-center h-full px-3 gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div
+            className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0"
+            aria-hidden="true"
+          >
+            <Shield className="h-4 w-4 text-white" />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-black text-white tracking-wider leading-none">SHELTER NOW</h1>
-            <p className="text-[10px] text-red-400 font-bold tracking-widest uppercase">Bomb Shelter Locator</p>
+          <div className="flex-col hidden sm:flex">
+            <h1 className="text-sm font-black text-white tracking-wider leading-none">
+              SHELTER NOW
+            </h1>
+            <p className="text-[9px] text-red-400/90 font-semibold tracking-widest uppercase leading-tight mt-0.5">
+              Emergency Locator
+            </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${isAlertActive ? 'bg-red-600/20' : 'bg-red-600/10'} border border-red-500/50 transition-all`}>
-            <div className={`w-2 h-2 rounded-full ${isAlertActive ? 'bg-red-500' : 'bg-red-400'} animate-pulse`} />
-            <span className="text-xs font-bold text-red-400">ACTIVE</span>
-          </div>
-          <AlertTriangle className="h-5 w-5 text-amber-500 animate-pulse hidden sm:block" />
+
+        {/* Search slot — fills the middle */}
+        {children && <div className="flex-1 min-w-0">{children}</div>}
+
+        <div
+          className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/15 border border-green-500/30 flex-shrink-0"
+          role="status"
+          aria-label="System status: Active and ready"
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500" aria-hidden="true" />
+          <span className="text-[11px] font-bold text-green-400">ACTIVE</span>
         </div>
       </div>
     </header>

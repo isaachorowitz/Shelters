@@ -16,3 +16,13 @@ export interface Shelter {
     scooter: number // in minutes
   }
 }
+
+/** Shape returned by the /api/shelters endpoint */
+export interface ShelterApiResponse {
+  id: number
+  name: string
+  type: string
+  lat: number
+  lng: number
+  meters: number
+}

@@ -2,9 +2,18 @@
 
 import type { Shelter } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { PersonStanding, Bike, Zap, PlayIcon as Run, Navigation, MapPin, AlertTriangle, Map, Smartphone } from "lucide-react"
-import { useState } from "react"
+import {
+  PersonStanding,
+  Bike,
+  Zap,
+  PlayIcon as Run,
+  Navigation,
+  MapPin,
+  Map,
+  Smartphone,
+  ExternalLink,
+} from "lucide-react"
+import { useState, useCallback } from "react"
 import {
   Dialog,
   DialogContent,
@@ -15,156 +24,170 @@ import {
 
 interface ShelterCardProps {
   shelter: Shelter
+  rank?: number
   userLocation?: { lat: number; lng: number } | null
 }
 
-export default function ShelterCard({ shelter, userLocation }: ShelterCardProps) {
-  const [showNavigationModal, setShowNavigationModal] = useState(false)
+const SHELTER_TYPE_LABELS: Record<string, string> = {
+  underground: "Underground",
+  emergency: "Emergency",
+  medical: "Medical",
+  public: "Public",
+  community: "Community",
+  "safe-haven": "Safe Haven",
+}
 
-  const handleNavigate = (mapType: 'google' | 'apple' | 'waze') => {
-    if (shelter.coordinates) {
-      const destination = `${shelter.coordinates.lat},${shelter.coordinates.lng}`
-      
-      let mapsUrl
-      
-      switch(mapType) {
-        case 'apple':
-          mapsUrl = `maps://?daddr=${destination}&dirflg=w`
+export default function ShelterCard({ shelter, rank, userLocation }: ShelterCardProps) {
+  const [showNavModal, setShowNavModal] = useState(false)
+
+  const handleNavigate = useCallback(
+    (mapType: "google" | "apple" | "waze") => {
+      if (!shelter.coordinates) return
+      const dest = `${shelter.coordinates.lat},${shelter.coordinates.lng}`
+
+      let url: string
+      switch (mapType) {
+        case "apple":
+          url = `maps://?daddr=${dest}&dirflg=w`
           break
-        case 'waze':
-          mapsUrl = `waze://?ll=${destination}&navigate=yes`
+        case "waze":
+          url = `waze://?ll=${dest}&navigate=yes`
           break
-        case 'google':
-        default:
-          const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : ''
-          mapsUrl = `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ''}&destination=${destination}&travelmode=walking`
+        default: {
+          const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : ""
+          url = `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ""}&destination=${dest}&travelmode=walking`
           break
+        }
       }
+      window.open(url, "_blank", "noopener,noreferrer")
+      setShowNavModal(false)
+    },
+    [shelter.coordinates, userLocation]
+  )
 
-      window.open(mapsUrl, "_blank", "noopener,noreferrer")
-      setShowNavigationModal(false)
-    }
-  }
+  const distanceText =
+    shelter.distance != null
+      ? shelter.distance < 1000
+        ? `${Math.round(shelter.distance)}m`
+        : `${(shelter.distance / 1000).toFixed(1)}km`
+      : null
 
-  const etaItems = shelter.etas
-    ? [
-        { icon: PersonStanding, label: shelter.etas.walk, color: "text-green-400", mode: "WALK", bgColor: "bg-green-500/20" },
-        { icon: Run, label: shelter.etas.run, color: "text-amber-400", mode: "RUN", bgColor: "bg-amber-500/20" },
-        { icon: Bike, label: shelter.etas.cycle, color: "text-blue-400", mode: "BIKE", bgColor: "bg-blue-500/20" },
-        { icon: Zap, label: shelter.etas.scooter, color: "text-purple-400", mode: "SCOOTER", bgColor: "bg-purple-500/20" },
-      ]
-    : []
-
-  const getShelterTypeColor = (type: string) => {
-    switch (type) {
-      case 'underground':
-        return 'bg-red-600/90 text-white'
-      case 'emergency':
-        return 'bg-orange-600/90 text-white'
-      case 'medical':
-        return 'bg-blue-600/90 text-white'
-      default:
-        return 'bg-yellow-600/90 text-white'
-    }
-  }
+  const typeLabel = SHELTER_TYPE_LABELS[shelter.type] ?? shelter.type
 
   return (
     <>
-      <div className="bg-black/40 backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex flex-col gap-3 border border-white/20 hover:border-white/40 transition-all duration-200">
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-start gap-2">
-            <h3 className="text-lg font-bold text-white leading-tight flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
+      <article
+        className="bg-neutral-900/80 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden"
+        aria-label={`${shelter.name} - ${typeLabel} shelter${distanceText ? `, ${distanceText} away` : ""}`}
+      >
+        {/* Top bar with rank indicator */}
+        <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+          {rank != null && (
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm text-white flex-shrink-0 ${
+                rank === 1
+                  ? "bg-red-600"
+                  : rank === 2
+                    ? "bg-orange-600"
+                    : "bg-amber-600"
+              }`}
+              aria-label={`Number ${rank} nearest`}
+            >
+              {rank}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-white leading-tight truncate">
               {shelter.name}
             </h3>
-            <Badge
-              variant="secondary"
-              className={`text-xs font-bold uppercase whitespace-nowrap px-2 py-1 rounded-md ${getShelterTypeColor(shelter.type)}`}
-            >
-              {shelter.type}
-            </Badge>
+            <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">
+              {typeLabel}
+            </span>
           </div>
-          {shelter.distance !== undefined && (
-            <p className="text-sm text-white/90 flex items-center font-medium">
-              <MapPin className="h-4 w-4 mr-1.5 text-red-400" />
-              <span className="text-xl font-bold text-white">
-                {shelter.distance < 1000
-                  ? `${shelter.distance.toFixed(0)}m`
-                  : `${(shelter.distance / 1000).toFixed(1)}km`}
-              </span>
-              <span className="ml-1 text-white/70">away</span>
-            </p>
+          {distanceText && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <MapPin className="h-4 w-4 text-red-400" aria-hidden="true" />
+              <span className="text-lg font-black text-white">{distanceText}</span>
+            </div>
           )}
         </div>
 
-        {shelter.etas && etaItems.length > 0 && (
-          <div className="grid grid-cols-4 gap-2">
-            {etaItems.map((eta, index) => (
+        {/* ETA grid */}
+        {shelter.etas && (
+          <div className="grid grid-cols-4 gap-1 px-3 py-2" role="list" aria-label="Estimated travel times">
+            {[
+              { icon: PersonStanding, label: shelter.etas.walk, mode: "Walk", color: "text-green-400" },
+              { icon: Run, label: shelter.etas.run, mode: "Run", color: "text-amber-400" },
+              { icon: Bike, label: shelter.etas.cycle, mode: "Bike", color: "text-blue-400" },
+              { icon: Zap, label: shelter.etas.scooter, mode: "Scooter", color: "text-purple-400" },
+            ].map((eta) => (
               <div
-                key={index}
-                className={`flex flex-col items-center gap-1 p-2 ${eta.bgColor} backdrop-blur-sm rounded-lg border border-white/10`}
-                title={`${eta.mode} ETA`}
+                key={eta.mode}
+                className="flex flex-col items-center py-1.5 rounded-lg bg-white/5"
+                role="listitem"
+                aria-label={`${eta.mode}: ${eta.label} minutes`}
               >
-                <eta.icon className={`h-5 w-5 ${eta.color}`} />
-                <span className="text-xs font-bold text-white">{eta.label}m</span>
-                <span className="text-[10px] text-white/70 font-medium">{eta.mode}</span>
+                <eta.icon className={`h-4 w-4 ${eta.color}`} aria-hidden="true" />
+                <span className="text-sm font-bold text-white mt-0.5">{eta.label}</span>
+                <span className="text-[9px] text-white/50 font-medium uppercase">{eta.mode}</span>
               </div>
             ))}
           </div>
         )}
 
-        <Button
-          onClick={() => setShowNavigationModal(true)}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-base rounded-xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-red-600/50"
-          disabled={!shelter.coordinates}
-          aria-label={`Navigate to ${shelter.name}`}
-        >
-          <Navigation className="mr-2 h-5 w-5" />
-          GET TO SAFETY NOW
-        </Button>
-      </div>
+        {/* Navigate button */}
+        <div className="px-3 pb-3 pt-1">
+          <Button
+            onClick={() => setShowNavModal(true)}
+            className="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3.5 text-base rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-red-600/20"
+            disabled={!shelter.coordinates}
+            aria-label={`Navigate to ${shelter.name}`}
+          >
+            <Navigation className="mr-2 h-5 w-5" aria-hidden="true" />
+            NAVIGATE
+          </Button>
+        </div>
+      </article>
 
-      <Dialog open={showNavigationModal} onOpenChange={setShowNavigationModal}>
-        <DialogContent className="bg-black/95 border-2 border-red-500/50 text-white max-w-sm mx-auto">
+      <Dialog open={showNavModal} onOpenChange={setShowNavModal}>
+        <DialogContent className="bg-neutral-950 border-2 border-red-500/40 text-white max-w-sm mx-auto rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-center flex items-center justify-center gap-2">
-              <AlertTriangle className="h-6 w-6 text-red-500 animate-pulse" />
-              NAVIGATE TO SHELTER
+            <DialogTitle className="text-xl font-black text-center">
+              CHOOSE NAVIGATION
             </DialogTitle>
-            <DialogDescription className="text-center text-white/80 font-semibold">
-              Choose your navigation app
+            <DialogDescription className="text-center text-white/70 text-sm">
+              Walking directions to {shelter.name}
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex flex-col gap-3 mt-4">
+
+          <div className="flex flex-col gap-2.5 mt-3">
             <Button
-              onClick={() => handleNavigate('google')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
+              onClick={() => handleNavigate("google")}
+              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
             >
-              <Map className="h-6 w-6" />
+              <Map className="h-5 w-5" aria-hidden="true" />
               Google Maps
+              <ExternalLink className="h-4 w-4 ml-auto opacity-50" aria-hidden="true" />
             </Button>
-            
+
             <Button
-              onClick={() => handleNavigate('apple')}
-              className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
+              onClick={() => handleNavigate("apple")}
+              className="w-full bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
             >
-              <Smartphone className="h-6 w-6" />
+              <Smartphone className="h-5 w-5" aria-hidden="true" />
               Apple Maps
+              <ExternalLink className="h-4 w-4 ml-auto opacity-50" aria-hidden="true" />
             </Button>
-            
+
             <Button
-              onClick={() => handleNavigate('waze')}
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
+              onClick={() => handleNavigate("waze")}
+              className="w-full bg-cyan-700 hover:bg-cyan-600 active:bg-cyan-500 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
             >
-              <Navigation className="h-6 w-6" />
+              <Navigation className="h-5 w-5" aria-hidden="true" />
               Waze
+              <ExternalLink className="h-4 w-4 ml-auto opacity-50" aria-hidden="true" />
             </Button>
           </div>
-          
-          <p className="text-xs text-white/50 text-center mt-4">
-            Walking directions to {shelter.name}
-          </p>
         </DialogContent>
       </Dialog>
     </>

@@ -1,0 +1,12 @@
+[
+  { "id": 1, "name": "Dizengoff Center Emergency Shelter", "type": "emergency", "lat": 32.075306, "lng": 34.774615 },
+  { "id": 2, "name": "Rabin Square Underground Shelter", "type": "underground", "lat": 32.080117, "lng": 34.780698 },
+  { "id": 3, "name": "Gordon Beach Emergency Shelter", "type": "emergency", "lat": 32.08125, "lng": 34.768194 },
+  { "id": 4, "name": "Sarona Market Emergency Point", "type": "emergency", "lat": 32.071389, "lng": 34.787639 },
+  { "id": 5, "name": "Tel Aviv Port Safe Haven", "type": "safe-haven", "lat": 32.097917, "lng": 34.773611 },
+  { "id": 6, "name": "Carmel Market Safe Zone", "type": "public", "lat": 32.068111, "lng": 34.768111 },
+  { "id": 7, "name": "Azrieli Center Basement Shelter", "type": "underground", "lat": 32.074111, "lng": 34.791444 },
+  { "id": 8, "name": "Habima Square Underground", "type": "underground", "lat": 32.072823, "lng": 34.780443 },
+  { "id": 9, "name": "Yarkon Park North Shelter", "type": "public", "lat": 32.093444, "lng": 34.8095 },
+  { "id": 10, "name": "Neve Tzedek Community Center", "type": "community", "lat": 32.061222, "lng": 34.764833 }
+]

@@ -2,8 +2,7 @@
 
 import type { Shelter, Coordinates } from "@/lib/types"
 import ShelterCard from "./shelter-card"
-import { ChevronUp, ChevronDown, AlertTriangle, Loader2, Info, Shield } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronUp, ChevronDown, AlertTriangle, Loader2, Shield, MapPin } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface ShelterPanelProps {
@@ -14,188 +13,169 @@ interface ShelterPanelProps {
   isDesktopPanel?: boolean
 }
 
-export default function ShelterPanel({ shelters, isLoading, hasLocationError, userLocation, isDesktopPanel = false }: ShelterPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
-
-  // Detect mobile and auto-expand
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
-
-  // Auto-expand when shelters are loaded
-  useEffect(() => {
-    if (!isLoading && shelters.length > 0) {
-      setIsExpanded(true)
-    }
-  }, [isLoading, shelters.length])
-
-  // Desktop panel is always expanded and has different styling
-  if (isDesktopPanel) {
+function PanelContent({
+  shelters,
+  isLoading,
+  hasLocationError,
+  userLocation,
+}: Omit<ShelterPanelProps, "isDesktopPanel">) {
+  if (isLoading) {
     return (
-      <div className="h-full w-full bg-black/90 backdrop-blur-xl rounded-2xl border-2 border-red-500/30 shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between bg-black/60 backdrop-blur-xl py-4 px-6 border-b border-red-500/30">
-          <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <Shield className="h-8 w-8 text-red-500" />
-            {isLoading ? "SCANNING..." : "NEAREST BOMB SHELTERS"}
-          </h2>
-        </div>
-
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-red-600/50 scrollbar-track-black/50 p-6 h-[calc(100%-80px)]">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full text-white text-center">
-              <div className="relative">
-                <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-                <div className="absolute inset-0 h-12 w-12 animate-ping">
-                  <Loader2 className="h-12 w-12 text-red-500/50" />
-                </div>
-              </div>
-              <p className="text-xl font-bold mt-4">LOCATING NEAREST BOMB SHELTERS</p>
-              <p className="text-sm text-white/70">Stand by...</p>
-            </div>
-          ) : hasLocationError && shelters.every((s) => s.distance === undefined) ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-white">
-              <AlertTriangle className="h-12 w-12 text-amber-400 animate-pulse mb-3" />
-              <p className="text-xl font-bold">LOCATION ACCESS REQUIRED</p>
-              <p className="text-sm text-white/70 mt-2">
-                Enable location services to find bomb shelters near you
-              </p>
-            </div>
-          ) : shelters.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-white">
-              <Info className="h-12 w-12 text-sky-400 mb-3" />
-              <p className="text-xl font-bold">NO SHELTERS IN RANGE</p>
-              <p className="text-sm text-white/70">Move to a populated area</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {shelters.map((shelter) => (
-                <ShelterCard key={shelter.id} shelter={shelter} userLocation={userLocation} />
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col items-center justify-center py-12 text-white text-center" role="status">
+        <Loader2 className="h-10 w-10 animate-spin text-red-500" aria-hidden="true" />
+        <p className="text-lg font-bold mt-3">LOCATING SHELTERS</p>
+        <p className="text-sm text-white/60 mt-1">Scanning nearby area...</p>
       </div>
     )
   }
 
-  // Mobile panel layout - adjusted heights
-  const panelHeightClass = isExpanded 
-    ? "h-[55vh] max-h-[calc(100vh-140px)]"
-    : "h-[100px]"
-
-  const userHasRealDistance = (s: Shelter[]) => s.some((sh) => sh.distance !== undefined)
-
-  const togglePanel = () => setIsExpanded(!isExpanded)
-
-  let content
-  if (isLoading) {
-    content = (
-      <div className="flex flex-col items-center justify-center h-full text-white p-6 text-center">
-        <div className="relative">
-          <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-          <div className="absolute inset-0 h-12 w-12 animate-ping">
-            <Loader2 className="h-12 w-12 text-red-500/50" />
-          </div>
+  if (hasLocationError && shelters.every((s) => s.distance === undefined)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-white" role="alert">
+        <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center mb-3">
+          <MapPin className="h-7 w-7 text-amber-400" aria-hidden="true" />
         </div>
-        <p className="text-xl font-bold mt-4">LOCATING NEAREST BOMB SHELTERS</p>
-        <p className="text-sm text-white/70">Stand by...</p>
-      </div>
-    )
-  } else if (hasLocationError && shelters.every((s) => s.distance === undefined)) {
-    content = (
-      <div className="flex flex-col items-center justify-center h-full text-center text-white p-6">
-        <AlertTriangle className="h-12 w-12 text-amber-400 animate-pulse mb-3" />
-        <p className="text-xl font-bold">LOCATION ACCESS REQUIRED</p>
-        <p className="text-sm text-white/70 mt-2">
-          Enable location services to find bomb shelters near you
+        <p className="text-lg font-bold">LOCATION REQUIRED</p>
+        <p className="text-sm text-white/60 mt-1 max-w-[250px]">
+          Enable location services to find shelters near you
         </p>
       </div>
     )
-  } else if (shelters.length === 0) {
-    content = (
-      <div className="flex flex-col items-center justify-center h-full text-center text-white p-6">
-        <Info className="h-12 w-12 text-sky-400 mb-3" />
-        <p className="text-xl font-bold">NO SHELTERS IN RANGE</p>
-        <p className="text-sm text-white/70">Move to a populated area</p>
-      </div>
-    )
-  } else {
-    content = (
-      <div className="space-y-3 pb-safe">
-        {shelters.map((shelter) => (
-          <ShelterCard key={shelter.id} shelter={shelter} userLocation={userLocation} />
-        ))}
+  }
+
+  if (shelters.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-white" role="status">
+        <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-3">
+          <Shield className="h-7 w-7 text-white/40" aria-hidden="true" />
+        </div>
+        <p className="text-lg font-bold">NO SHELTERS FOUND</p>
+        <p className="text-sm text-white/60 mt-1">Move to a populated area</p>
       </div>
     )
   }
 
   return (
-    <div
-      className={`fixed bottom-0 left-0 right-0 w-full 
-        bg-black/50 backdrop-blur-2xl rounded-t-3xl shadow-2xl z-50 transition-all duration-300 ease-in-out overflow-hidden 
-        border-t-2 border-red-500/50 ${panelHeightClass}`}
-      style={{
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9))',
-        boxShadow: '0 -10px 40px rgba(239, 68, 68, 0.3)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
-    >
+    <div className="space-y-3" role="list" aria-label="Nearby shelters">
+      {shelters.map((shelter, i) => (
+        <div key={shelter.id} role="listitem">
+          <ShelterCard shelter={shelter} rank={i + 1} userLocation={userLocation} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default function ShelterPanel({
+  shelters,
+  isLoading,
+  hasLocationError,
+  userLocation,
+  isDesktopPanel = false,
+}: ShelterPanelProps) {
+  const [isExpanded, setIsExpanded] = useState(true)
+
+  useEffect(() => {
+    if (!isLoading && shelters.length > 0) setIsExpanded(true)
+  }, [isLoading, shelters.length])
+
+  if (isDesktopPanel) {
+    return (
       <div
-        className="flex items-center justify-between sticky top-0 bg-black/60 backdrop-blur-xl py-3 px-4 cursor-pointer h-[64px] border-b border-red-500/30"
-        onClick={togglePanel}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && togglePanel()}
+        className="h-full w-full bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col"
+        role="region"
+        aria-label="Shelter list"
+      >
+        <div className="flex items-center gap-2 bg-black/60 backdrop-blur-xl py-4 px-5 border-b border-white/10 shrink-0">
+          <Shield className="h-6 w-6 text-red-500" aria-hidden="true" />
+          <h2 className="text-lg font-black text-white">
+            {isLoading ? "SCANNING..." : `NEAREST SHELTERS (${shelters.length})`}
+          </h2>
+        </div>
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+          <PanelContent
+            shelters={shelters}
+            isLoading={isLoading}
+            hasLocationError={hasLocationError}
+            userLocation={userLocation}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const toggle = () => setIsExpanded((v) => !v)
+  const nearestShelter = shelters[0]
+  const nearestDist =
+    nearestShelter?.distance != null
+      ? nearestShelter.distance < 1000
+        ? `${Math.round(nearestShelter.distance)}m`
+        : `${(nearestShelter.distance / 1000).toFixed(1)}km`
+      : null
+
+  return (
+    <div
+      className={`fixed bottom-0 left-0 right-0 w-full bg-black/95 backdrop-blur-2xl rounded-t-2xl shadow-2xl z-50 transition-[height] duration-300 ease-out overflow-hidden border-t border-white/10 ${
+        isExpanded ? "h-[55vh] max-h-[calc(100vh-80px)]" : "h-[72px]"
+      }`}
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      role="region"
+      aria-label="Shelter list"
+    >
+      {/* Drag handle / header */}
+      <button
+        className="flex items-center w-full sticky top-0 bg-black/80 backdrop-blur-xl px-4 cursor-pointer h-[72px] border-b border-white/10"
+        onClick={toggle}
         aria-expanded={isExpanded}
         aria-controls="shelter-list-content"
+        aria-label={isExpanded ? "Collapse shelter list" : "Expand shelter list"}
       >
-        <h2 className="text-xl font-black text-white flex items-center gap-2">
-          <Shield className="h-6 w-6 text-red-500" />
-          {isLoading ? "SCANNING..." : userHasRealDistance(shelters) ? "NEAREST BOMB SHELTERS" : "BOMB SHELTERS"}
-        </h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation()
-            togglePanel()
-          }}
-          className="text-white hover:text-white hover:bg-white/20 p-2 rounded-lg h-10 w-10"
-          aria-label={isExpanded ? "Collapse panel" : "Expand panel"}
-        >
-          {isExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
-        </Button>
-      </div>
+        {/* Drag indicator */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/20 rounded-full" aria-hidden="true" />
 
+        <div className="flex items-center gap-2 flex-1 min-w-0 pt-1">
+          <Shield className="h-5 w-5 text-red-500 flex-shrink-0" aria-hidden="true" />
+          <div className="flex flex-col items-start min-w-0">
+            <span className="text-sm font-black text-white">
+              {isLoading
+                ? "SCANNING..."
+                : shelters.length > 0
+                  ? `${shelters.length} SHELTER${shelters.length > 1 ? "S" : ""} NEARBY`
+                  : "NO SHELTERS"}
+            </span>
+            {!isLoading && nearestDist && (
+              <span className="text-xs text-white/50 font-medium">
+                Nearest: <span className="text-red-400 font-bold">{nearestDist}</span>
+                {nearestShelter?.etas && (
+                  <> &middot; {nearestShelter.etas.walk} min walk</>
+                )}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg text-white/60">
+          {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+        </div>
+      </button>
+
+      {/* Content */}
       <div
         id="shelter-list-content"
-        className={`h-[calc(100%-64px)] overflow-y-auto scrollbar-thin scrollbar-thumb-red-600/50 scrollbar-track-black/50 transition-opacity duration-200 ${isExpanded ? "opacity-100 p-4" : "opacity-0 p-0"}`}
-        style={{ paddingBottom: isExpanded ? 'calc(1rem + env(safe-area-inset-bottom))' : 0 }}
+        className={`h-[calc(100%-72px)] overflow-y-auto scrollbar-thin transition-opacity duration-200 ${
+          isExpanded ? "opacity-100 p-4" : "opacity-0 p-0 pointer-events-none"
+        }`}
+        style={{ paddingBottom: isExpanded ? "calc(1rem + env(safe-area-inset-bottom))" : 0 }}
       >
-        {isExpanded && content}
+        {isExpanded && (
+          <PanelContent
+            shelters={shelters}
+            isLoading={isLoading}
+            hasLocationError={hasLocationError}
+            userLocation={userLocation}
+          />
+        )}
       </div>
-      
-      {!isExpanded && !isLoading && (
-        <div
-          className="text-sm text-white font-bold text-center px-4 py-2 flex items-center justify-center animate-pulse"
-          onClick={togglePanel}
-          role="button"
-          tabIndex={-1}
-        >
-          <AlertTriangle className="h-4 w-4 text-red-500 mr-2 flex-shrink-0" />
-          <span className="truncate">
-            {shelters.length > 0
-              ? `${shelters.length} BOMB SHELTER${shelters.length > 1 ? "S" : ""} NEARBY - TAP FOR DETAILS`
-              : "NO SHELTERS IN RANGE"}
-          </span>
-        </div>
-      )}
     </div>
   )
 }
