@@ -85,7 +85,6 @@ export default function HomePage() {
   const [locationError, setLocationError] = useState<string | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [isTracking, setIsTracking] = useState(false)
-  const [isDesktop, setIsDesktop] = useState(false)
   const [locationChanged, setLocationChanged] = useState(false)
   const [outsideIsrael, setOutsideIsrael] = useState(false)
   const [showDirectory, setShowDirectory] = useState(false)
@@ -93,20 +92,11 @@ export default function HomePage() {
   const [shareShelter, setShareShelter] = useState<Shelter | null>(null)
   const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null)
   const [flyToLocation, setFlyToLocation] = useState<{ coords: Coordinates; zoom: number; key: number } | null>(null)
-  const [activeCityLabel, setActiveCityLabel] = useState<string | null>(null)
   const lastFetchLocationRef = useRef<Coordinates | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // The effective location for shelter lookups: search overrides user location
   const effectiveLocation = searchLocation ?? userLocation
-
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1024px)")
-    const handle = (e: MediaQueryListEvent | MediaQueryList) => setIsDesktop(e.matches)
-    handle(mql)
-    mql.addEventListener("change", handle)
-    return () => mql.removeEventListener("change", handle)
-  }, [])
 
   const requestLocation = useCallback(() => {
     setLoadingLocation(true)
@@ -187,13 +177,7 @@ export default function HomePage() {
     setLocationChanged(false)
     setNearbyShelters([])
     setAllShelters([])
-    setActiveCityLabel(null)
     lastFetchLocationRef.current = coords
-  }, [])
-
-  const handleCityShortcut = useCallback((coords: Coordinates, label: string) => {
-    setActiveCityLabel((prev) => (prev === label ? null : label))
-    setFlyToLocation({ coords, zoom: 14, key: Date.now() })
   }, [])
 
   const handleClearSearch = useCallback(() => {
@@ -264,7 +248,7 @@ export default function HomePage() {
   const nearbyForRoutes = useMemo(() => nearbyShelters.slice(0, 3), [nearbyShelters])
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden bg-black">
+    <div className="flex flex-col h-screen overflow-hidden bg-black">
       <a
         href="#shelter-list-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-red-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold"
@@ -272,11 +256,8 @@ export default function HomePage() {
         Skip to shelter list
       </a>
 
-      <Header
-        onOpenDirectory={handleOpenDirectory}
-        onCityShortcut={handleCityShortcut}
-        activeCityLabel={activeCityLabel}
-      >
+      {/* Top nav — fixed height 48px */}
+      <Header onOpenDirectory={handleOpenDirectory}>
         <AddressSearch
           onLocationSelect={handleSearchSelect}
           activeLabel={searchLabel ?? undefined}
@@ -286,34 +267,14 @@ export default function HomePage() {
         />
       </Header>
 
-      <main className="flex-1 pt-[88px] relative" role="main">
-        <MapView
-          userLocation={effectiveLocation}
-          shelters={allShelters}
-          mapHeight="100%"
-          onLocationUpdate={isTracking && !searchLocation ? handleLocationUpdate : undefined}
-          nearbyShelters={nearbyForRoutes}
-          focusedShelterId={focusedShelterId}
-          onFocusHandled={handleFocusHandled}
-          flyToLocation={flyToLocation}
-        />
+      {/* Body below nav: sidebar + map */}
+      <div className="flex flex-1 overflow-hidden pt-12">
 
-
-        {isDesktop && (
-          <div className="absolute top-2 left-4 bottom-4 w-[420px] max-w-[calc(100vw-32px)] z-20">
-            <ShelterPanel
-              shelters={nearbyShelters}
-              isLoading={(!searchLocation && loadingLocation) || loadingShelters}
-              hasLocationError={!!locationError && !searchLocation}
-              userLocation={effectiveLocation}
-              isDesktopPanel
-              onOpenDirectory={handleOpenDirectory}
-              onOpenShare={handleOpenShare}
-            />
-          </div>
-        )}
-
-        {!isDesktop && (
+        {/* ── Sidebar ─────────────────────────────────────────── */}
+        <aside
+          className="w-[340px] shrink-0 flex flex-col bg-black border-r border-white/8 overflow-hidden z-20"
+          aria-label="Nearest shelters"
+        >
           <ShelterPanel
             shelters={nearbyShelters}
             isLoading={(!searchLocation && loadingLocation) || loadingShelters}
@@ -322,106 +283,109 @@ export default function HomePage() {
             onOpenDirectory={handleOpenDirectory}
             onOpenShare={handleOpenShare}
           />
-        )}
+        </aside>
 
-        {locationChanged && !loadingLocation && (
-          <Button
-            onClick={handleLocationRefresh}
-            className="fixed top-24 left-1/2 -translate-x-1/2 z-30 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-5 rounded-full shadow-lg flex items-center gap-2"
-            aria-label="Update shelter distances for new location"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            UPDATE SHELTERS
-          </Button>
-        )}
+        {/* ── Map ─────────────────────────────────────────────── */}
+        <main className="flex-1 relative overflow-hidden" role="main">
+          <MapView
+            userLocation={effectiveLocation}
+            shelters={allShelters}
+            mapHeight="100%"
+            onLocationUpdate={isTracking && !searchLocation ? handleLocationUpdate : undefined}
+            nearbyShelters={nearbyForRoutes}
+            focusedShelterId={focusedShelterId}
+            onFocusHandled={handleFocusHandled}
+            flyToLocation={flyToLocation}
+          />
 
+          {locationChanged && !loadingLocation && (
+            <Button
+              onClick={handleLocationRefresh}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full shadow-lg flex items-center gap-2 text-sm"
+              aria-label="Update shelter distances for new location"
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              UPDATE SHELTERS
+            </Button>
+          )}
 
-        {/* Outside Israel notice — compact bottom pill */}
-        {outsideIsrael && !searchLocation && !isInitialLoading && (
-          <div
-            className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-30"
-            role="alert"
-          >
-            <div className="flex items-center gap-2 bg-amber-800/95 backdrop-blur-md border border-amber-600/40 text-white rounded-full px-4 py-2.5 shadow-xl shadow-black/40 whitespace-nowrap">
-              <SearchX className="h-4 w-4 text-amber-300 flex-shrink-0" aria-hidden="true" />
-              <span className="text-xs font-bold">Not in Israel</span>
-              <span className="text-xs text-white/60 hidden sm:inline">&mdash; search an address above</span>
-            </div>
-          </div>
-        )}
-
-        {permissionDenied && !isInitialLoading && !searchLocation && (
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-md z-40 flex items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Location permission required"
-          >
-            <div className="bg-neutral-950 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-red-500/40">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="h-8 w-8 text-red-500" aria-hidden="true" />
-                </div>
-                <h2 className="text-xl font-black text-white mb-2">LOCATION REQUIRED</h2>
-                <p className="text-white/70 mb-4 text-sm leading-relaxed">
-                  Enable location services to find the nearest bomb shelters in case of emergency.
-                </p>
-                <Button
-                  onClick={requestLocation}
-                  className="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-4 text-lg rounded-xl mb-4"
-                  aria-label="Enable location access"
-                >
-                  ENABLE LOCATION
-                </Button>
-                <p className="text-xs text-white/50 mb-3">
-                  Or search for a specific address:
-                </p>
-                <AddressSearch onLocationSelect={(coords, label) => {
-                  handleSearchSelect(coords, label)
-                  setPermissionDenied(false)
-                }} />
-                <p className="text-xs text-white/40 mt-4">
-                  Your location is used only to find nearby shelters and is never stored.
-                </p>
+          {outsideIsrael && !searchLocation && !isInitialLoading && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30" role="alert">
+              <div className="flex items-center gap-2 bg-amber-800/95 backdrop-blur-md border border-amber-600/40 text-white rounded-full px-4 py-2 shadow-xl whitespace-nowrap">
+                <SearchX className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" aria-hidden="true" />
+                <span className="text-xs font-bold">Outside Israel — search an address</span>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {isInitialLoading && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-30"
-            role="status"
-            aria-label="Acquiring your location"
-          >
-            <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-10 w-10 text-red-500" aria-hidden="true" />
+          {isInitialLoading && (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-30"
+              role="status"
+              aria-label="Acquiring your location"
+            >
+              <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-4">
+                <Shield className="h-10 w-10 text-red-500" aria-hidden="true" />
+              </div>
+              <p className="text-white font-black text-xl">ACQUIRING LOCATION</p>
+              <p className="text-white/50 text-sm mt-1">Finding nearest bomb shelters...</p>
             </div>
-            <p className="text-white font-black text-xl">ACQUIRING LOCATION</p>
-            <p className="text-white/50 text-sm mt-1">Finding nearest bomb shelters...</p>
-          </div>
-        )}
+          )}
 
-        {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
-          <div
-            className="absolute top-[94px] left-3 right-3 max-w-md mx-auto z-30 bg-red-900/90 border border-red-700 text-white rounded-xl px-4 py-3"
-            role="alert"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold">{locationError}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={requestLocation}
-                className="text-white hover:text-white hover:bg-red-800/50 font-bold flex-shrink-0"
-                aria-label="Retry getting location"
-              >
-                RETRY
-              </Button>
+          {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
+            <div
+              className="absolute top-4 left-3 right-3 max-w-md mx-auto z-30 bg-red-900/90 border border-red-700 text-white rounded-xl px-4 py-3"
+              role="alert"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold">{locationError}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={requestLocation}
+                  className="text-white hover:text-white hover:bg-red-800/50 font-bold flex-shrink-0"
+                  aria-label="Retry getting location"
+                >
+                  RETRY
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+
+          {permissionDenied && !isInitialLoading && !searchLocation && (
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-md z-40 flex items-center justify-center p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Location permission required"
+            >
+              <div className="bg-neutral-950 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-red-500/40">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MapPin className="h-8 w-8 text-red-500" aria-hidden="true" />
+                  </div>
+                  <h2 className="text-xl font-black text-white mb-2">LOCATION REQUIRED</h2>
+                  <p className="text-white/70 mb-4 text-sm leading-relaxed">
+                    Enable location services to find the nearest bomb shelters.
+                  </p>
+                  <Button
+                    onClick={requestLocation}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg rounded-xl mb-4"
+                    aria-label="Enable location access"
+                  >
+                    ENABLE LOCATION
+                  </Button>
+                  <p className="text-xs text-white/50 mb-3">Or search for an address:</p>
+                  <AddressSearch onLocationSelect={(coords, label) => {
+                    handleSearchSelect(coords, label)
+                    setPermissionDenied(false)
+                  }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
 
       <ShelterDirectory
         open={showDirectory}
