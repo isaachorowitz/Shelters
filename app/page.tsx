@@ -195,21 +195,17 @@ export default function HomePage() {
     }
   }, [userLocation])
 
-  // Load ALL shelters for map display (once)
-  useEffect(() => {
+  // Load ALL shelters for map display (lightweight endpoint, no haversine)
+  // Deferred until after nearby shelters load to prioritize critical data
+  const loadAllMapShelters = useCallback(() => {
     if (allSheltersLoadedRef.current) return
     const ac = new AbortController()
 
     const loadAll = async () => {
       try {
-        // Use center of Israel as reference point; we need all shelters for map
-        const res = await fetch(
-          `/api/shelters?lat=31.5&lng=34.8&limit=3000`,
-          { signal: ac.signal }
-        )
+        const res = await fetch(`/api/shelters/map`, { signal: ac.signal })
         if (!res.ok) return
         const { shelters: raw } = await res.json()
-        // Transform without distance/etas since we just need coordinates for map display
         const all = (raw as ShelterApiResponse[]).map((s) => ({
           id: String(s.id),
           name: s.name,
@@ -250,6 +246,8 @@ export default function HomePage() {
         const all = (raw as ShelterApiResponse[]).map(transformShelter)
         setAllShelters(all)
         setNearbyShelters(all.slice(0, 5))
+        // After critical nearby data is loaded, load all shelters for map
+        loadAllMapShelters()
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return
       } finally {
@@ -259,7 +257,7 @@ export default function HomePage() {
 
     fetchShelters()
     return () => ac.abort()
-  }, [effectiveLocation, locationChanged])
+  }, [effectiveLocation, locationChanged, loadAllMapShelters])
 
   const handleShowOnMap = useCallback((shelter: Shelter) => {
     setFocusedShelterId(shelter.id)
@@ -357,7 +355,7 @@ export default function HomePage() {
           />
 
           {/* My Location button */}
-          {userLocation && (
+          {userLocation && !locationError && (
             <button
               onClick={handleRecenterToUser}
               className="absolute top-4 left-3 z-30 w-11 h-11 flex items-center justify-center rounded-full shadow-lg card-press"

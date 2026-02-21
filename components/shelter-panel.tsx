@@ -266,7 +266,7 @@ function BottomSheet({
               </span>
               {!isLoading && nearestDist && (
                 <span className="text-[12px] text-white/45 font-medium leading-tight mt-0.5">
-                  Closest: <span className="text-red-400 font-bold">{nearestDist}</span>
+                  Nearest: <span className="text-red-400 font-bold">{nearestDist}</span>
                   {shelters[0]?.etas && (
                     <span className="text-white/30"> · {shelters[0].etas.walk} min walk</span>
                   )}
