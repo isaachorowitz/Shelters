@@ -49,24 +49,20 @@ export default function DataSourcesDialog() {
         onClick={() => setOpen(true)}
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10 rounded-full"
-        aria-label="Data sources and information"
+        className="h-7 w-7 p-0 text-white/35 hover:text-white hover:bg-white/10 rounded-full"
+        aria-label="Data sources"
       >
-        <Info className="h-4 w-4" />
+        <Info className="h-3.5 w-3.5" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-neutral-950 border-2 border-white/10 text-white max-w-md mx-auto rounded-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="bg-neutral-950 border border-white/10 text-white max-w-md mx-auto rounded-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="text-xl font-black text-center">
-              Data Sources / מקורות מידע
+            <DialogTitle className="text-lg font-black text-center">
+              Data Sources
             </DialogTitle>
-            <DialogDescription className="text-center text-white/60 text-sm leading-relaxed">
-              All shelter data comes from publicly available, open-licensed datasets from Israeli government portals, NGOs, and community mapping projects.
-              <br />
-              <span dir="rtl" className="block mt-1">
-                כל נתוני המקלטים מגיעים ממאגרי מידע פתוחים וזמינים לציבור.
-              </span>
+            <DialogDescription className="text-center text-white/55 text-xs leading-relaxed mt-1">
+              Shelter data from publicly available, open-licensed Israeli government portals, NGOs, and community mapping projects.
             </DialogDescription>
           </DialogHeader>
 
@@ -108,10 +104,7 @@ export default function DataSourcesDialog() {
 
             <div className="bg-white/5 rounded-xl px-3 py-3 border border-white/5 mt-4">
               <p className="text-xs text-white/40 leading-relaxed text-center">
-                This app aggregates data from {DATA_SOURCES.length} verified open sources covering 2,939 shelter locations across Israel. Data accuracy depends on source currency — always verify shelter access in person during an emergency.
-              </p>
-              <p className="text-xs text-white/40 leading-relaxed text-center mt-2" dir="rtl">
-                האפליקציה מאגדת נתונים מ-{DATA_SOURCES.length} מקורות מאומתים המכסים 2,939 מיקומי מקלט ברחבי ישראל. דיוק הנתונים תלוי בעדכניות המקור — תמיד וודאו גישה למקלט באופן אישי בעת חירום.
+                {DATA_SOURCES.length} verified open sources · 2,939 shelter locations across Israel. Always verify shelter access in person during an emergency.
               </p>
             </div>
           </div>

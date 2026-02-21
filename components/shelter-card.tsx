@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Users,
   Eye,
+  Share2,
 } from "lucide-react"
 import { useState, useCallback, useMemo } from "react"
 import {
@@ -31,6 +32,7 @@ interface ShelterCardProps {
   userLocation?: { lat: number; lng: number } | null
   variant?: "nearby" | "directory"
   onShowOnMap?: (shelter: Shelter) => void
+  onShare?: (shelter: Shelter) => void
 }
 
 export default function ShelterCard({
@@ -39,6 +41,7 @@ export default function ShelterCard({
   userLocation,
   variant = "nearby",
   onShowOnMap,
+  onShare,
 }: ShelterCardProps) {
   const [showNavModal, setShowNavModal] = useState(false)
   const display = useMemo(() => getShelterDisplayInfo(shelter), [shelter])
@@ -242,17 +245,27 @@ export default function ShelterCard({
           </div>
         )}
 
-        {/* Navigate button */}
-        <div className="px-3 pb-3 pt-1">
+        {/* Navigate + Share buttons */}
+        <div className="px-3 pb-3 pt-1 flex gap-2">
           <Button
             onClick={() => setShowNavModal(true)}
-            className="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3.5 text-base rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-red-600/20"
+            className="flex-1 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3.5 text-base rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-red-600/20"
             disabled={!shelter.coordinates}
-            aria-label={`Navigate to shelter`}
+            aria-label="Navigate to shelter"
           >
             <Navigation className="mr-2 h-5 w-5" aria-hidden="true" />
-            NAVIGATE / נווט
+            NAVIGATE
           </Button>
+          {onShare && (
+            <Button
+              onClick={() => onShare(shelter)}
+              variant="ghost"
+              className="w-12 h-auto bg-blue-600/15 hover:bg-blue-600/30 border border-blue-500/25 text-blue-400 rounded-xl transition-all flex-shrink-0"
+              aria-label="Share shelter"
+            >
+              <Share2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
         </div>
       </article>
 

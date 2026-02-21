@@ -47,7 +47,6 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
 
 const ROUTE_COLORS = ["#ef4444", "#f97316", "#eab308"]
 const MIN_MOVE_DISTANCE = 10
-const VIEWPORT_PAD = 0.3 // 30% buffer beyond viewport for smooth panning
 
 function MapController({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap()
@@ -215,20 +214,13 @@ function ShelterLayer({
   const nearbySheltersRef = useRef(nearbyShelters)
   nearbySheltersRef.current = nearbyShelters
 
-  // Sync visible markers to current viewport
+  // Add all markers to the layer group (always visible)
   const syncViewport = useCallback(() => {
-    const bounds = map.getBounds().pad(VIEWPORT_PAD)
     const lg = layerGroupRef.current
-
     markersRef.current.forEach((marker) => {
-      const inView = bounds.contains(marker.getLatLng())
-      if (inView && !lg.hasLayer(marker)) {
-        lg.addLayer(marker)
-      } else if (!inView && lg.hasLayer(marker)) {
-        lg.removeLayer(marker)
-      }
+      if (!lg.hasLayer(marker)) lg.addLayer(marker)
     })
-  }, [map])
+  }, [])
 
   // Rebuild all marker instances when shelter data changes
   useEffect(() => {
@@ -275,14 +267,12 @@ function ShelterLayer({
     syncViewport()
   }, [shelters, nearbyShelters, syncViewport])
 
-  // Mount layer group + listen for viewport changes
+  // Mount layer group — no viewport filtering, all markers always present
   useEffect(() => {
     const lg = layerGroupRef.current
     lg.addTo(map)
-    map.on("moveend", syncViewport)
 
     return () => {
-      map.off("moveend", syncViewport)
       lg.clearLayers()
       lg.remove()
     }

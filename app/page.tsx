@@ -7,7 +7,7 @@ import ShelterPanel from "@/components/shelter-panel"
 import AddressSearch from "@/components/address-search"
 import ShelterDirectory from "@/components/shelter-directory"
 import ShareShelterDialog from "@/components/share-shelter-dialog"
-import { Loader2, MapPin, Shield, RefreshCw, SearchX, Share2 } from "lucide-react"
+import { Loader2, MapPin, Shield, RefreshCw, SearchX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import type { Shelter, ShelterApiResponse, Coordinates } from "@/lib/types"
@@ -90,6 +90,7 @@ export default function HomePage() {
   const [outsideIsrael, setOutsideIsrael] = useState(false)
   const [showDirectory, setShowDirectory] = useState(false)
   const [showShare, setShowShare] = useState(false)
+  const [shareShelter, setShareShelter] = useState<Shelter | null>(null)
   const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null)
   const [flyToLocation, setFlyToLocation] = useState<{ coords: Coordinates; zoom: number; key: number } | null>(null)
   const [activeCityLabel, setActiveCityLabel] = useState<string | null>(null)
@@ -249,8 +250,14 @@ export default function HomePage() {
     setShowDirectory(true)
   }, [])
 
-  const handleOpenShare = useCallback(() => {
+  const handleOpenShare = useCallback((shelter?: Shelter) => {
+    setShareShelter(shelter ?? null)
     setShowShare(true)
+  }, [])
+
+  const handleShareClose = useCallback((v: boolean) => {
+    setShowShare(v)
+    if (!v) setTimeout(() => setShareShelter(null), 300)
   }, [])
 
   const isInitialLoading = loadingLocation && !userLocation && !locationError
@@ -293,7 +300,7 @@ export default function HomePage() {
 
 
         {isDesktop && (
-          <div className="absolute top-[60px] left-4 bottom-4 w-[380px] max-w-[calc(100vw-32px)] z-20">
+          <div className="absolute top-2 left-4 bottom-4 w-[420px] max-w-[calc(100vw-32px)] z-20">
             <ShelterPanel
               shelters={nearbyShelters}
               isLoading={(!searchLocation && loadingLocation) || loadingShelters}
@@ -301,6 +308,7 @@ export default function HomePage() {
               userLocation={effectiveLocation}
               isDesktopPanel
               onOpenDirectory={handleOpenDirectory}
+              onOpenShare={handleOpenShare}
             />
           </div>
         )}
@@ -312,6 +320,7 @@ export default function HomePage() {
             hasLocationError={!!locationError && !searchLocation}
             userLocation={effectiveLocation}
             onOpenDirectory={handleOpenDirectory}
+            onOpenShare={handleOpenShare}
           />
         )}
 
@@ -326,20 +335,6 @@ export default function HomePage() {
           </Button>
         )}
 
-        {/* Share floating button — sits above the mobile shelter panel */}
-        <button
-          onClick={handleOpenShare}
-          className="fixed bottom-[calc(55vh+16px)] lg:bottom-8 right-4 z-30 flex items-center gap-2 px-3 py-2.5 rounded-full shadow-xl transition-all active:scale-95"
-          style={{
-            background: "rgba(37,99,235,0.88)",
-            border: "1px solid rgba(59,130,246,0.4)",
-            backdropFilter: "blur(12px)",
-          }}
-          aria-label="Share a shelter with a friend"
-        >
-          <Share2 className="h-4 w-4 text-white" aria-hidden="true" />
-          <span className="text-xs font-bold text-white">Share</span>
-        </button>
 
         {/* Outside Israel notice — compact bottom pill */}
         {outsideIsrael && !searchLocation && !isInitialLoading && (
@@ -432,12 +427,15 @@ export default function HomePage() {
         open={showDirectory}
         onClose={() => setShowDirectory(false)}
         onShowOnMap={handleShowOnMap}
+        onShare={(shelter) => handleOpenShare(shelter)}
         userLocation={effectiveLocation}
       />
 
       <ShareShelterDialog
         open={showShare}
-        onOpenChange={setShowShare}
+        onOpenChange={handleShareClose}
+        shelter={shareShelter}
+        nearbyShelters={nearbyShelters}
         userLocation={effectiveLocation}
       />
     </div>

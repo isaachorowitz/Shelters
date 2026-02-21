@@ -2,7 +2,7 @@
 
 import type { Shelter, Coordinates } from "@/lib/types"
 import ShelterCard from "./shelter-card"
-import { ChevronUp, ChevronDown, AlertTriangle, Loader2, Shield, MapPin, List } from "lucide-react"
+import { ChevronUp, ChevronDown, AlertTriangle, Loader2, Shield, MapPin, List, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 
@@ -13,6 +13,7 @@ interface ShelterPanelProps {
   userLocation?: Coordinates | null
   isDesktopPanel?: boolean
   onOpenDirectory?: () => void
+  onOpenShare?: (shelter?: Shelter) => void
 }
 
 function PanelContent({
@@ -21,26 +22,27 @@ function PanelContent({
   hasLocationError,
   userLocation,
   onOpenDirectory,
-}: Omit<ShelterPanelProps, "isDesktopPanel">) {
+  onOpenShare,
+}: Omit<ShelterPanelProps, "isDesktopPanel" | "onOpenShare"> & { onOpenShare?: (shelter?: Shelter) => void }) {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-white text-center" role="status">
-        <Loader2 className="h-10 w-10 animate-spin text-red-500" aria-hidden="true" />
-        <p className="text-lg font-bold mt-3">LOCATING SHELTERS / מאתר מקלטים</p>
-        <p className="text-sm text-white/60 mt-1">Scanning nearby area... / סורק את האזור...</p>
+      <div className="flex flex-col items-center justify-center py-10 text-white text-center" role="status">
+        <Loader2 className="h-8 w-8 animate-spin text-red-500" aria-hidden="true" />
+        <p className="text-base font-bold mt-3">Locating Shelters</p>
+        <p className="text-sm text-white/50 mt-1">Scanning nearby area...</p>
       </div>
     )
   }
 
   if (hasLocationError && shelters.every((s) => s.distance === undefined)) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center text-white" role="alert">
-        <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center mb-3">
-          <MapPin className="h-7 w-7 text-amber-400" aria-hidden="true" />
+      <div className="flex flex-col items-center justify-center py-10 text-center text-white" role="alert">
+        <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center mb-3">
+          <MapPin className="h-6 w-6 text-amber-400" aria-hidden="true" />
         </div>
-        <p className="text-lg font-bold">LOCATION REQUIRED / נדרש מיקום</p>
-        <p className="text-sm text-white/60 mt-1 max-w-[250px]">
-          Enable location to find shelters / אפשר מיקום כדי למצוא מקלטים
+        <p className="text-base font-bold">Location Required</p>
+        <p className="text-sm text-white/50 mt-1 max-w-[220px]">
+          Enable location to find nearby shelters
         </p>
       </div>
     )
@@ -48,12 +50,12 @@ function PanelContent({
 
   if (shelters.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center text-white" role="status">
-        <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-3">
-          <Shield className="h-7 w-7 text-white/40" aria-hidden="true" />
+      <div className="flex flex-col items-center justify-center py-10 text-center text-white" role="status">
+        <div className="w-12 h-12 rounded-full bg-white/8 flex items-center justify-center mb-3">
+          <Shield className="h-6 w-6 text-white/30" aria-hidden="true" />
         </div>
-        <p className="text-lg font-bold">NO SHELTERS FOUND / לא נמצאו מקלטים</p>
-        <p className="text-sm text-white/60 mt-1">Move to a populated area / עברו לאזור מאוכלס</p>
+        <p className="text-base font-bold">No Shelters Found</p>
+        <p className="text-sm text-white/50 mt-1">Move to a populated area</p>
       </div>
     )
   }
@@ -63,22 +65,37 @@ function PanelContent({
       <div className="space-y-3" role="list" aria-label="Nearby shelters">
         {shelters.map((shelter, i) => (
           <div key={shelter.id} role="listitem">
-            <ShelterCard shelter={shelter} rank={i + 1} userLocation={userLocation} />
+            <ShelterCard
+              shelter={shelter}
+              rank={i + 1}
+              userLocation={userLocation}
+              onShare={onOpenShare ? (s) => onOpenShare(s) : undefined}
+            />
           </div>
         ))}
       </div>
-      {onOpenDirectory && (
-        <div className="mt-4 text-center">
+      <div className="mt-4 flex gap-2">
+        {onOpenShare && (
+          <Button
+            onClick={() => onOpenShare()}
+            variant="ghost"
+            className="flex-1 text-xs text-blue-400/70 hover:text-blue-300 hover:bg-blue-500/10 font-semibold h-9"
+          >
+            <Share2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+            Share
+          </Button>
+        )}
+        {onOpenDirectory && (
           <Button
             onClick={onOpenDirectory}
             variant="ghost"
-            className="text-sm text-white/40 hover:text-white hover:bg-white/10 font-semibold"
+            className="flex-1 text-xs text-white/35 hover:text-white hover:bg-white/8 font-semibold h-9"
           >
-            <List className="h-4 w-4 mr-2" aria-hidden="true" />
-            BROWSE ALL SHELTERS / עיין בכל המקלטים
+            <List className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+            All Shelters
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </>
   )
 }
@@ -90,6 +107,7 @@ export default function ShelterPanel({
   userLocation,
   isDesktopPanel = false,
   onOpenDirectory,
+  onOpenShare,
 }: ShelterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
@@ -104,19 +122,33 @@ export default function ShelterPanel({
         role="region"
         aria-label="Shelter list"
       >
-        <div className="flex items-center gap-2 bg-black/60 backdrop-blur-xl py-4 px-5 border-b border-white/10 shrink-0">
-          <Shield className="h-6 w-6 text-red-500" aria-hidden="true" />
-          <h2 className="text-lg font-black text-white">
-            {isLoading ? "SCANNING... / סורק..." : `NEAREST SHELTERS / מקלטים קרובים (${shelters.length})`}
-          </h2>
+        <div className="flex items-center justify-between bg-black/60 backdrop-blur-xl py-3 px-4 border-b border-white/10 shrink-0">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-red-500" aria-hidden="true" />
+            <h2 className="text-sm font-black text-white tracking-wide">
+              {isLoading ? "SCANNING..." : `NEAREST SHELTERS (${shelters.length})`}
+            </h2>
+          </div>
+          {onOpenShare && (
+            <button
+              onClick={() => onOpenShare()}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-blue-300 transition-colors"
+              style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)" }}
+              aria-label="Share a shelter"
+            >
+              <Share2 className="h-3 w-3" aria-hidden="true" />
+              Share
+            </button>
+          )}
         </div>
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
           <PanelContent
             shelters={shelters}
             isLoading={isLoading}
             hasLocationError={hasLocationError}
             userLocation={userLocation}
             onOpenDirectory={onOpenDirectory}
+            onOpenShare={onOpenShare}
           />
         </div>
       </div>
@@ -134,8 +166,8 @@ export default function ShelterPanel({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 w-full bg-black/95 backdrop-blur-2xl rounded-t-2xl shadow-2xl z-50 transition-[height] duration-300 ease-out overflow-hidden border-t border-white/10 ${
-        isExpanded ? "h-[55vh] max-h-[calc(100vh-80px)]" : "h-[72px]"
+      className={`fixed bottom-0 left-0 right-0 w-full bg-black/95 backdrop-blur-2xl rounded-t-2xl shadow-2xl z-20 transition-[height] duration-300 ease-out overflow-hidden border-t border-white/10 ${
+        isExpanded ? "h-[55vh] max-h-[calc(100vh-100px)]" : "h-[68px]"
       }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       role="region"
@@ -143,48 +175,60 @@ export default function ShelterPanel({
     >
       {/* Drag handle / header */}
       <button
-        className="flex items-center w-full sticky top-0 bg-black/80 backdrop-blur-xl px-4 cursor-pointer h-[72px] border-b border-white/10"
+        className="flex items-center w-full sticky top-0 bg-black/80 backdrop-blur-xl px-4 cursor-pointer h-[68px] border-b border-white/8"
         onClick={toggle}
         aria-expanded={isExpanded}
         aria-controls="shelter-list-content"
         aria-label={isExpanded ? "Collapse shelter list" : "Expand shelter list"}
       >
-        {/* Drag indicator */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/20 rounded-full" aria-hidden="true" />
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/15 rounded-full" aria-hidden="true" />
 
         <div className="flex items-center gap-2 flex-1 min-w-0 pt-1">
-          <Shield className="h-5 w-5 text-red-500 flex-shrink-0" aria-hidden="true" />
+          <Shield className="h-4 w-4 text-red-500 flex-shrink-0" aria-hidden="true" />
           <div className="flex flex-col items-start min-w-0">
-            <span className="text-sm font-black text-white">
+            <span className="text-sm font-black text-white leading-tight">
               {isLoading
                 ? "SCANNING..."
                 : shelters.length > 0
-                  ? `${shelters.length} SHELTER${shelters.length > 1 ? "S" : ""} NEARBY`
+                  ? `${shelters.length} NEAREST SHELTERS`
                   : "NO SHELTERS"}
             </span>
             {!isLoading && nearestDist && (
-              <span className="text-xs text-white/50 font-medium">
-                Nearest: <span className="text-red-400 font-bold">{nearestDist}</span>
+              <span className="text-xs text-white/45 font-medium">
+                Closest: <span className="text-red-400 font-bold">{nearestDist}</span>
                 {nearestShelter?.etas && (
-                  <> &middot; {nearestShelter.etas.walk} min walk</>
+                  <> · {nearestShelter.etas.walk} min walk</>
                 )}
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg text-white/60">
-          {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onOpenShare && isExpanded && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenShare() }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold text-blue-300 transition-colors"
+              style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)" }}
+              aria-label="Share a shelter"
+            >
+              <Share2 className="h-3 w-3" aria-hidden="true" />
+              Share
+            </button>
+          )}
+          <div className="w-8 h-8 flex items-center justify-center rounded-lg text-white/50">
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </div>
         </div>
       </button>
 
       {/* Content */}
       <div
         id="shelter-list-content"
-        className={`h-[calc(100%-72px)] overflow-y-auto scrollbar-thin transition-opacity duration-200 ${
-          isExpanded ? "opacity-100 p-4" : "opacity-0 p-0 pointer-events-none"
+        className={`h-[calc(100%-68px)] overflow-y-auto scrollbar-thin transition-opacity duration-200 ${
+          isExpanded ? "opacity-100 p-3" : "opacity-0 p-0 pointer-events-none"
         }`}
-        style={{ paddingBottom: isExpanded ? "calc(1rem + env(safe-area-inset-bottom))" : 0 }}
+        style={{ paddingBottom: isExpanded ? "calc(0.75rem + env(safe-area-inset-bottom))" : 0 }}
       >
         {isExpanded && (
           <PanelContent
@@ -193,6 +237,7 @@ export default function ShelterPanel({
             hasLocationError={hasLocationError}
             userLocation={userLocation}
             onOpenDirectory={onOpenDirectory}
+            onOpenShare={onOpenShare}
           />
         )}
       </div>
