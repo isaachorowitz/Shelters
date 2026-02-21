@@ -142,6 +142,13 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-red-600/70;
   }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Reduced motion for accessibility */

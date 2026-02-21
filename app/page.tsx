@@ -6,7 +6,8 @@ import Header from "@/components/header"
 import ShelterPanel from "@/components/shelter-panel"
 import AddressSearch from "@/components/address-search"
 import ShelterDirectory from "@/components/shelter-directory"
-import { Loader2, MapPin, Shield, RefreshCw, SearchX } from "lucide-react"
+import ShareShelterDialog from "@/components/share-shelter-dialog"
+import { Loader2, MapPin, Shield, RefreshCw, SearchX, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import type { Shelter, ShelterApiResponse, Coordinates } from "@/lib/types"
@@ -88,7 +89,10 @@ export default function HomePage() {
   const [locationChanged, setLocationChanged] = useState(false)
   const [outsideIsrael, setOutsideIsrael] = useState(false)
   const [showDirectory, setShowDirectory] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null)
+  const [flyToLocation, setFlyToLocation] = useState<{ coords: Coordinates; zoom: number; key: number } | null>(null)
+  const [activeCityLabel, setActiveCityLabel] = useState<string | null>(null)
   const lastFetchLocationRef = useRef<Coordinates | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -182,7 +186,13 @@ export default function HomePage() {
     setLocationChanged(false)
     setNearbyShelters([])
     setAllShelters([])
+    setActiveCityLabel(null)
     lastFetchLocationRef.current = coords
+  }, [])
+
+  const handleCityShortcut = useCallback((coords: Coordinates, label: string) => {
+    setActiveCityLabel((prev) => (prev === label ? null : label))
+    setFlyToLocation({ coords, zoom: 14, key: Date.now() })
   }, [])
 
   const handleClearSearch = useCallback(() => {
@@ -239,6 +249,10 @@ export default function HomePage() {
     setShowDirectory(true)
   }, [])
 
+  const handleOpenShare = useCallback(() => {
+    setShowShare(true)
+  }, [])
+
   const isInitialLoading = loadingLocation && !userLocation && !locationError
   const nearbyForRoutes = useMemo(() => nearbyShelters.slice(0, 3), [nearbyShelters])
 
@@ -251,16 +265,21 @@ export default function HomePage() {
         Skip to shelter list
       </a>
 
-      <Header onOpenDirectory={handleOpenDirectory}>
+      <Header
+        onOpenDirectory={handleOpenDirectory}
+        onCityShortcut={handleCityShortcut}
+        activeCityLabel={activeCityLabel}
+      >
         <AddressSearch
           onLocationSelect={handleSearchSelect}
           activeLabel={searchLabel ?? undefined}
           onClearActive={searchLabel ? handleClearSearch : undefined}
           hasUserLocation={!!userLocation}
+          compact
         />
       </Header>
 
-      <main className="flex-1 pt-14 relative" role="main">
+      <main className="flex-1 pt-[88px] relative" role="main">
         <MapView
           userLocation={effectiveLocation}
           shelters={allShelters}
@@ -269,6 +288,7 @@ export default function HomePage() {
           nearbyShelters={nearbyForRoutes}
           focusedShelterId={focusedShelterId}
           onFocusHandled={handleFocusHandled}
+          flyToLocation={flyToLocation}
         />
 
 
@@ -298,13 +318,28 @@ export default function HomePage() {
         {locationChanged && !loadingLocation && (
           <Button
             onClick={handleLocationRefresh}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-30 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-5 rounded-full shadow-lg flex items-center gap-2"
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-30 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-5 rounded-full shadow-lg flex items-center gap-2"
             aria-label="Update shelter distances for new location"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             UPDATE SHELTERS
           </Button>
         )}
+
+        {/* Share floating button — sits above the mobile shelter panel */}
+        <button
+          onClick={handleOpenShare}
+          className="fixed bottom-[calc(55vh+16px)] lg:bottom-8 right-4 z-30 flex items-center gap-2 px-3 py-2.5 rounded-full shadow-xl transition-all active:scale-95"
+          style={{
+            background: "rgba(37,99,235,0.88)",
+            border: "1px solid rgba(59,130,246,0.4)",
+            backdropFilter: "blur(12px)",
+          }}
+          aria-label="Share a shelter with a friend"
+        >
+          <Share2 className="h-4 w-4 text-white" aria-hidden="true" />
+          <span className="text-xs font-bold text-white">Share</span>
+        </button>
 
         {/* Outside Israel notice — compact bottom pill */}
         {outsideIsrael && !searchLocation && !isInitialLoading && (
@@ -374,7 +409,7 @@ export default function HomePage() {
 
         {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
           <div
-            className="absolute top-[72px] left-3 right-3 max-w-md mx-auto z-30 bg-red-900/90 border border-red-700 text-white rounded-xl px-4 py-3"
+            className="absolute top-[94px] left-3 right-3 max-w-md mx-auto z-30 bg-red-900/90 border border-red-700 text-white rounded-xl px-4 py-3"
             role="alert"
           >
             <div className="flex items-center justify-between gap-3">
@@ -397,6 +432,12 @@ export default function HomePage() {
         open={showDirectory}
         onClose={() => setShowDirectory(false)}
         onShowOnMap={handleShowOnMap}
+        userLocation={effectiveLocation}
+      />
+
+      <ShareShelterDialog
+        open={showShare}
+        onOpenChange={setShowShare}
         userLocation={effectiveLocation}
       />
     </div>

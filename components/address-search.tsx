@@ -27,6 +27,8 @@ interface AddressSearchProps {
   onClearActive?: () => void
   hasUserLocation?: boolean
   className?: string
+  placeholder?: string
+  compact?: boolean
 }
 
 function formatResult(r: NominatimResult): string {
@@ -59,6 +61,8 @@ export default function AddressSearch({
   onClearActive,
   hasUserLocation,
   className = "",
+  placeholder,
+  compact = false,
 }: AddressSearchProps) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<NominatimResult[]>([])
@@ -68,6 +72,7 @@ export default function AddressSearch({
   const abortRef = useRef<AbortController | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const searchAddress = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -164,14 +169,18 @@ export default function AddressSearch({
     }
   }, [])
 
+  const inputPlaceholder = placeholder ?? (activeLabel ? "Search new address..." : "Search address...")
+  const inputHeight = compact ? "h-8" : "h-9"
+  const iconSize = compact ? "w-8 h-8" : "w-9 h-9"
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      <div className="flex items-center h-9 bg-white/8 border border-white/10 rounded-full overflow-hidden focus-within:border-red-500/40 focus-within:bg-white/10 transition-all">
-        <div className="flex items-center justify-center w-9 h-9 flex-shrink-0">
+      <div className={`flex items-center ${inputHeight} bg-white/8 border border-white/10 rounded-full overflow-hidden focus-within:border-red-500/40 focus-within:bg-white/10 transition-all`}>
+        <div className={`flex items-center justify-center ${iconSize} flex-shrink-0`}>
           {isSearching ? (
-            <Loader2 className="h-4 w-4 animate-spin text-red-400" aria-hidden="true" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-red-400" aria-hidden="true" />
           ) : (
-            <Search className="h-4 w-4 text-white/40" aria-hidden="true" />
+            <Search className="h-3.5 w-3.5 text-white/40" aria-hidden="true" />
           )}
         </div>
         <input
@@ -180,8 +189,8 @@ export default function AddressSearch({
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => { if (results.length > 0) setShowResults(true) }}
-          placeholder={activeLabel ? "Search a new address..." : "Search address in Israel..."}
-          className="flex-1 bg-transparent text-white text-sm py-1.5 pr-1 outline-none placeholder:text-white/35"
+          placeholder={inputPlaceholder}
+          className="flex-1 bg-transparent text-white text-xs py-1.5 pr-1 outline-none placeholder:text-white/30 min-w-0"
           aria-label="Search for an address in Israel"
           autoComplete="off"
           dir="auto"
@@ -189,23 +198,25 @@ export default function AddressSearch({
         {query && (
           <button
             onClick={handleClear}
-            className="flex items-center justify-center w-8 h-8 mr-0.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0 transition-colors"
+            className="flex items-center justify-center w-7 h-7 mr-0.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0 transition-colors"
             aria-label="Clear search"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
           </button>
         )}
       </div>
 
+      {/* Dropdown — rendered in a portal-like fixed container to always be on top */}
       {showResults && results.length > 0 && (
         <div
+          ref={dropdownRef}
           className="absolute left-0 right-0 rounded-2xl overflow-hidden max-h-[300px] overflow-y-auto"
           style={{
             top: "calc(100% + 6px)",
-            background: "#111111",
-            border: "1px solid rgba(255,255,255,0.12)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
-            zIndex: 9999,
+            background: "#0d0d0d",
+            border: "1px solid rgba(255,255,255,0.15)",
+            boxShadow: "0 12px 48px rgba(0,0,0,0.95)",
+            zIndex: 99999,
           }}
           role="listbox"
           aria-label="Address suggestions"
@@ -213,6 +224,7 @@ export default function AddressSearch({
           {results.map((r) => (
             <button
               key={r.place_id}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(r)}
               className="flex items-center gap-3 w-full px-4 py-3 text-left transition-colors border-b border-white/5 last:border-0"
               style={{ background: "transparent" }}
@@ -240,7 +252,7 @@ export default function AddressSearch({
             background: "rgba(180,90,0,0.92)",
             border: "1px solid rgba(251,146,60,0.3)",
             boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
-            zIndex: 9999,
+            zIndex: 99999,
           }}
         >
           <MapPin className="h-3.5 w-3.5 text-orange-300 flex-shrink-0" aria-hidden="true" />

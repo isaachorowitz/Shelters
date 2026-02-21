@@ -37,6 +37,7 @@ interface MapViewProps {
   nearbyShelters?: Shelter[]
   focusedShelterId?: string | null
   onFocusHandled?: () => void
+  flyToLocation?: { coords: Coordinates; zoom: number; key: number } | null
 }
 
 const ISRAEL_BOUNDS: LatLngBoundsExpression = [
@@ -308,6 +309,24 @@ function ShelterLayer({
   return null
 }
 
+function FlyToController({ flyToLocation }: { flyToLocation: MapViewProps["flyToLocation"] }) {
+  const map = useMap()
+  const prevKeyRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!flyToLocation) return
+    if (flyToLocation.key === prevKeyRef.current) return
+    prevKeyRef.current = flyToLocation.key
+    try {
+      map.flyTo([flyToLocation.coords.lat, flyToLocation.coords.lng], flyToLocation.zoom, { duration: 1.2 })
+    } catch {
+      // Map may be in transitional state
+    }
+  }, [map, flyToLocation])
+
+  return null
+}
+
 export default function MapView({
   userLocation,
   shelters,
@@ -316,6 +335,7 @@ export default function MapView({
   nearbyShelters = [],
   focusedShelterId,
   onFocusHandled,
+  flyToLocation,
 }: MapViewProps) {
   const [mapKey] = useState(() => Math.random())
   const defaultCenter: LatLngExpression = [32.0853, 34.7818]
@@ -344,6 +364,7 @@ export default function MapView({
         preferCanvas
       >
         <MapController center={currentCenter} zoom={currentZoom} />
+        <FlyToController flyToLocation={flyToLocation} />
         <LocationTracker onLocationUpdate={onLocationUpdate} />
         <ZoomControl position="bottomright" />
 
@@ -405,3 +426,5 @@ export default function MapView({
     </div>
   )
 }
+
+export type { MapViewProps }
