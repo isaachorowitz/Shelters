@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { Search, X, MapPin, Loader2 } from "lucide-react"
+import { Search, X, MapPin, Loader2, LocateFixed } from "lucide-react"
 import type { Coordinates } from "@/lib/types"
 
 interface NominatimResult {
@@ -23,6 +23,9 @@ interface NominatimResult {
 
 interface AddressSearchProps {
   onLocationSelect: (coords: Coordinates, label: string) => void
+  activeLabel?: string
+  onClearActive?: () => void
+  hasUserLocation?: boolean
   className?: string
 }
 
@@ -50,7 +53,13 @@ function buildLabel(result: NominatimResult): string {
   return parts.join(", ") || result.display_name.split(",").slice(0, 2).join(",")
 }
 
-export default function AddressSearch({ onLocationSelect, className = "" }: AddressSearchProps) {
+export default function AddressSearch({
+  onLocationSelect,
+  activeLabel,
+  onClearActive,
+  hasUserLocation,
+  className = "",
+}: AddressSearchProps) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<NominatimResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -67,7 +76,6 @@ export default function AddressSearch({ onLocationSelect, className = "" }: Addr
       return
     }
 
-    // Cancel any in-flight request
     if (abortRef.current) abortRef.current.abort()
     const ac = new AbortController()
     abortRef.current = ac
@@ -78,9 +86,9 @@ export default function AddressSearch({ onLocationSelect, className = "" }: Addr
         q: q,
         format: "json",
         countrycodes: "il",
-        limit: "5",
+        limit: "6",
         addressdetails: "1",
-        "accept-language": "he,en",
+        "accept-language": "en,he",
       })
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?${params}`,
@@ -121,8 +129,9 @@ export default function AddressSearch({ onLocationSelect, className = "" }: Addr
         lat: parseFloat(result.lat),
         lng: parseFloat(result.lon),
       }
-      onLocationSelect(coords, buildLabel(result))
-      setQuery("")
+      const label = buildLabel(result)
+      onLocationSelect(coords, label)
+      setQuery(label)
       setResults([])
       setShowResults(false)
       inputRef.current?.blur()
@@ -171,7 +180,7 @@ export default function AddressSearch({ onLocationSelect, className = "" }: Addr
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => { if (results.length > 0) setShowResults(true) }}
-          placeholder="Search address in Israel..."
+          placeholder={activeLabel ? "Search a new address..." : "Search address in Israel..."}
           className="flex-1 bg-transparent text-white text-sm py-1.5 pr-1 outline-none placeholder:text-white/35"
           aria-label="Search for an address in Israel"
           autoComplete="off"
@@ -219,6 +228,54 @@ export default function AddressSearch({ onLocationSelect, className = "" }: Addr
               </span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Active search indicator — shown below the input when an address is pinned */}
+      {activeLabel && !showResults && (
+        <div
+          className="absolute left-0 right-0 flex items-center gap-2 px-3 py-2 rounded-xl mt-1"
+          style={{
+            top: "calc(100% + 4px)",
+            background: "rgba(180,90,0,0.92)",
+            border: "1px solid rgba(251,146,60,0.3)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
+            zIndex: 9999,
+          }}
+        >
+          <MapPin className="h-3.5 w-3.5 text-orange-300 flex-shrink-0" aria-hidden="true" />
+          <span
+            className="flex-1 text-xs font-semibold text-white truncate"
+            dir="auto"
+            title={activeLabel}
+          >
+            {activeLabel}
+          </span>
+          {hasUserLocation && onClearActive && (
+            <button
+              onClick={onClearActive}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white flex-shrink-0 transition-colors"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.25)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
+              aria-label="Return to my location"
+            >
+              <LocateFixed className="h-3 w-3" />
+              My Location
+            </button>
+          )}
+          {onClearActive && (
+            <button
+              onClick={onClearActive}
+              className="flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0 transition-colors"
+              style={{ background: "rgba(255,255,255,0.1)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+              aria-label="Clear search"
+            >
+              <X className="h-3 w-3 text-white" />
+            </button>
+          )}
         </div>
       )}
     </div>

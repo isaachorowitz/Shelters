@@ -5,7 +5,8 @@ import dynamic from "next/dynamic"
 import Header from "@/components/header"
 import ShelterPanel from "@/components/shelter-panel"
 import AddressSearch from "@/components/address-search"
-import { Loader2, MapPin, Shield, RefreshCw, X, LocateFixed, SearchX } from "lucide-react"
+import ShelterDirectory from "@/components/shelter-directory"
+import { Loader2, MapPin, Shield, RefreshCw, SearchX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import type { Shelter, ShelterApiResponse, Coordinates } from "@/lib/types"
@@ -62,6 +63,12 @@ function transformShelter(s: ShelterApiResponse): Shelter {
     type: s.type,
     coordinates: { lat: s.lat, lng: s.lng },
     distance: s.meters,
+    address: s.address,
+    neighborhood: s.neighborhood,
+    cityEn: s.city_en,
+    cityHe: s.city_he,
+    capacity: s.capacity,
+    sources: s.sources,
     etas: calculateEtas(s.meters),
   }
 }
@@ -80,6 +87,8 @@ export default function HomePage() {
   const [isDesktop, setIsDesktop] = useState(false)
   const [locationChanged, setLocationChanged] = useState(false)
   const [outsideIsrael, setOutsideIsrael] = useState(false)
+  const [showDirectory, setShowDirectory] = useState(false)
+  const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null)
   const lastFetchLocationRef = useRef<Coordinates | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -189,7 +198,7 @@ export default function HomePage() {
     }
   }, [userLocation])
 
-  // Fetch shelters when effective location changes
+  // Fetch shelters when effective location changes — single API call
   useEffect(() => {
     if (!effectiveLocation || locationChanged) return
     const ac = new AbortController()
@@ -197,25 +206,15 @@ export default function HomePage() {
     const fetchShelters = async () => {
       setLoadingShelters(true)
       try {
-        const nearbyRes = await fetch(
-          `/api/shelters?lat=${effectiveLocation.lat}&lng=${effectiveLocation.lng}&limit=5`,
-          { signal: ac.signal }
-        )
-        if (!nearbyRes.ok) throw new Error("Failed to fetch shelters")
-        const { shelters: nearbyRaw } = await nearbyRes.json()
-        const nearby = (nearbyRaw as ShelterApiResponse[]).map(transformShelter)
-        setNearbyShelters(nearby)
-
-        const allRes = await fetch(
+        const res = await fetch(
           `/api/shelters?lat=${effectiveLocation.lat}&lng=${effectiveLocation.lng}&limit=500`,
           { signal: ac.signal }
         )
-        if (allRes.ok) {
-          const { shelters: allRaw } = await allRes.json()
-          setAllShelters((allRaw as ShelterApiResponse[]).map(transformShelter))
-        } else {
-          setAllShelters(nearby)
-        }
+        if (!res.ok) throw new Error("Failed to fetch shelters")
+        const { shelters: raw } = await res.json()
+        const all = (raw as ShelterApiResponse[]).map(transformShelter)
+        setAllShelters(all)
+        setNearbyShelters(all.slice(0, 5))
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return
       } finally {
@@ -226,6 +225,19 @@ export default function HomePage() {
     fetchShelters()
     return () => ac.abort()
   }, [effectiveLocation, locationChanged])
+
+  const handleShowOnMap = useCallback((shelter: Shelter) => {
+    setFocusedShelterId(shelter.id)
+    setShowDirectory(false)
+  }, [])
+
+  const handleFocusHandled = useCallback(() => {
+    setFocusedShelterId(null)
+  }, [])
+
+  const handleOpenDirectory = useCallback(() => {
+    setShowDirectory(true)
+  }, [])
 
   const isInitialLoading = loadingLocation && !userLocation && !locationError
   const nearbyForRoutes = useMemo(() => nearbyShelters.slice(0, 3), [nearbyShelters])
@@ -239,8 +251,13 @@ export default function HomePage() {
         Skip to shelter list
       </a>
 
-      <Header>
-        <AddressSearch onLocationSelect={handleSearchSelect} />
+      <Header onOpenDirectory={handleOpenDirectory}>
+        <AddressSearch
+          onLocationSelect={handleSearchSelect}
+          activeLabel={searchLabel ?? undefined}
+          onClearActive={searchLabel ? handleClearSearch : undefined}
+          hasUserLocation={!!userLocation}
+        />
       </Header>
 
       <main className="flex-1 pt-14 relative" role="main">
@@ -250,36 +267,10 @@ export default function HomePage() {
           mapHeight="100%"
           onLocationUpdate={isTracking && !searchLocation ? handleLocationUpdate : undefined}
           nearbyShelters={nearbyForRoutes}
+          focusedShelterId={focusedShelterId}
+          onFocusHandled={handleFocusHandled}
         />
 
-        {/* Active search label */}
-        {searchLabel && (
-          <div className="absolute top-2 z-30 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md lg:left-[420px] lg:translate-x-0 lg:w-[340px]">
-            <div className="flex items-center gap-2 bg-amber-600/90 backdrop-blur-md text-white rounded-full px-3 py-2 text-sm font-semibold shadow-lg">
-              <MapPin className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-              <span className="truncate flex-1 text-xs" dir="auto">
-                {searchLabel}
-              </span>
-              {userLocation && (
-                <button
-                  onClick={handleClearSearch}
-                  className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 hover:bg-white/30 text-[11px] font-bold"
-                  aria-label="Return to my location"
-                >
-                  <LocateFixed className="h-3 w-3" />
-                  My Location
-                </button>
-              )}
-              <button
-                onClick={handleClearSearch}
-                className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/20"
-                aria-label="Clear search"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-        )}
 
         {isDesktop && (
           <div className="absolute top-[60px] left-4 bottom-4 w-[380px] max-w-[calc(100vw-32px)] z-20">
@@ -289,6 +280,7 @@ export default function HomePage() {
               hasLocationError={!!locationError && !searchLocation}
               userLocation={effectiveLocation}
               isDesktopPanel
+              onOpenDirectory={handleOpenDirectory}
             />
           </div>
         )}
@@ -299,6 +291,7 @@ export default function HomePage() {
             isLoading={(!searchLocation && loadingLocation) || loadingShelters}
             hasLocationError={!!locationError && !searchLocation}
             userLocation={effectiveLocation}
+            onOpenDirectory={handleOpenDirectory}
           />
         )}
 
@@ -399,6 +392,13 @@ export default function HomePage() {
           </div>
         )}
       </main>
+
+      <ShelterDirectory
+        open={showDirectory}
+        onClose={() => setShowDirectory(false)}
+        onShowOnMap={handleShowOnMap}
+        userLocation={effectiveLocation}
+      />
     </div>
   )
 }

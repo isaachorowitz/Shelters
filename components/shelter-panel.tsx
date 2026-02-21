@@ -2,7 +2,8 @@
 
 import type { Shelter, Coordinates } from "@/lib/types"
 import ShelterCard from "./shelter-card"
-import { ChevronUp, ChevronDown, AlertTriangle, Loader2, Shield, MapPin } from "lucide-react"
+import { ChevronUp, ChevronDown, AlertTriangle, Loader2, Shield, MapPin, List } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 
 interface ShelterPanelProps {
@@ -11,6 +12,7 @@ interface ShelterPanelProps {
   hasLocationError: boolean
   userLocation?: Coordinates | null
   isDesktopPanel?: boolean
+  onOpenDirectory?: () => void
 }
 
 function PanelContent({
@@ -18,13 +20,14 @@ function PanelContent({
   isLoading,
   hasLocationError,
   userLocation,
+  onOpenDirectory,
 }: Omit<ShelterPanelProps, "isDesktopPanel">) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-white text-center" role="status">
         <Loader2 className="h-10 w-10 animate-spin text-red-500" aria-hidden="true" />
-        <p className="text-lg font-bold mt-3">LOCATING SHELTERS</p>
-        <p className="text-sm text-white/60 mt-1">Scanning nearby area...</p>
+        <p className="text-lg font-bold mt-3">LOCATING SHELTERS / מאתר מקלטים</p>
+        <p className="text-sm text-white/60 mt-1">Scanning nearby area... / סורק את האזור...</p>
       </div>
     )
   }
@@ -35,9 +38,9 @@ function PanelContent({
         <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center mb-3">
           <MapPin className="h-7 w-7 text-amber-400" aria-hidden="true" />
         </div>
-        <p className="text-lg font-bold">LOCATION REQUIRED</p>
+        <p className="text-lg font-bold">LOCATION REQUIRED / נדרש מיקום</p>
         <p className="text-sm text-white/60 mt-1 max-w-[250px]">
-          Enable location services to find shelters near you
+          Enable location to find shelters / אפשר מיקום כדי למצוא מקלטים
         </p>
       </div>
     )
@@ -49,20 +52,34 @@ function PanelContent({
         <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-3">
           <Shield className="h-7 w-7 text-white/40" aria-hidden="true" />
         </div>
-        <p className="text-lg font-bold">NO SHELTERS FOUND</p>
-        <p className="text-sm text-white/60 mt-1">Move to a populated area</p>
+        <p className="text-lg font-bold">NO SHELTERS FOUND / לא נמצאו מקלטים</p>
+        <p className="text-sm text-white/60 mt-1">Move to a populated area / עברו לאזור מאוכלס</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3" role="list" aria-label="Nearby shelters">
-      {shelters.map((shelter, i) => (
-        <div key={shelter.id} role="listitem">
-          <ShelterCard shelter={shelter} rank={i + 1} userLocation={userLocation} />
+    <>
+      <div className="space-y-3" role="list" aria-label="Nearby shelters">
+        {shelters.map((shelter, i) => (
+          <div key={shelter.id} role="listitem">
+            <ShelterCard shelter={shelter} rank={i + 1} userLocation={userLocation} />
+          </div>
+        ))}
+      </div>
+      {onOpenDirectory && (
+        <div className="mt-4 text-center">
+          <Button
+            onClick={onOpenDirectory}
+            variant="ghost"
+            className="text-sm text-white/40 hover:text-white hover:bg-white/10 font-semibold"
+          >
+            <List className="h-4 w-4 mr-2" aria-hidden="true" />
+            BROWSE ALL SHELTERS / עיין בכל המקלטים
+          </Button>
         </div>
-      ))}
-    </div>
+      )}
+    </>
   )
 }
 
@@ -72,6 +89,7 @@ export default function ShelterPanel({
   hasLocationError,
   userLocation,
   isDesktopPanel = false,
+  onOpenDirectory,
 }: ShelterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
@@ -89,7 +107,7 @@ export default function ShelterPanel({
         <div className="flex items-center gap-2 bg-black/60 backdrop-blur-xl py-4 px-5 border-b border-white/10 shrink-0">
           <Shield className="h-6 w-6 text-red-500" aria-hidden="true" />
           <h2 className="text-lg font-black text-white">
-            {isLoading ? "SCANNING..." : `NEAREST SHELTERS (${shelters.length})`}
+            {isLoading ? "SCANNING... / סורק..." : `NEAREST SHELTERS / מקלטים קרובים (${shelters.length})`}
           </h2>
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
@@ -98,6 +116,7 @@ export default function ShelterPanel({
             isLoading={isLoading}
             hasLocationError={hasLocationError}
             userLocation={userLocation}
+            onOpenDirectory={onOpenDirectory}
           />
         </div>
       </div>
@@ -173,6 +192,7 @@ export default function ShelterPanel({
             isLoading={isLoading}
             hasLocationError={hasLocationError}
             userLocation={userLocation}
+            onOpenDirectory={onOpenDirectory}
           />
         )}
       </div>

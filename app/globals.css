@@ -106,10 +106,7 @@
   font-family: inherit !important;
 }
 
-/* Shelter marker z-index */
-.shelter-marker {
-  z-index: 1000 !important;
-}
+/* Canvas-rendered shelter markers don't need z-index overrides */
 
 /* User location pulse animation */
 .user-pulse-ring {

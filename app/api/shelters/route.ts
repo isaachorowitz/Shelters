@@ -9,14 +9,26 @@ interface ShelterRow {
   lat: number
   lng: number
   meters: number
+  address?: string
+  neighborhood?: string
+  city_en?: string
+  city_he?: string
+  capacity?: number
+  sources?: string
 }
 
 interface ShelterEntry {
   id: number
-  name: string
-  type: string
   lat: number
   lng: number
+  type: string
+  name?: string
+  address?: string
+  neighborhood?: string
+  city_en?: string
+  city_he?: string
+  capacity?: number
+  sources?: string
 }
 
 function haversine(
@@ -36,17 +48,62 @@ function haversine(
 }
 
 // Static shelter data loaded from data/shelters.json
-// To update shelters: replace the JSON file with new data
-// Format: [{ id, name, type, lat, lng }, ...]
-const SHELTERS: ShelterEntry[] = shelterData
+// 2,939 shelters from 10 verified Israeli open data sources
+const SHELTERS: ShelterEntry[] = shelterData as ShelterEntry[]
+
+function buildName(s: ShelterEntry): string {
+  if (s.name) return s.name
+  // Generate a descriptive fallback name for shelters without one
+  if (s.address && s.city_he) return `מקלט – ${s.address}, ${s.city_he}`
+  if (s.address) return `מקלט – ${s.address}`
+  if (s.city_he) return `מקלט ציבורי – ${s.city_he}`
+  if (s.city_en) return `Public Shelter – ${s.city_en}`
+  return `מקלט #${s.id}`
+}
+
+// Pre-computed bounding box radii in degrees for spatial pre-filtering.
+// At Israel's latitude (~31°N), 1° lat ≈ 111km, 1° lng ≈ 95km.
+// For small limits we use a tight box; for larger limits we widen to ensure
+// we capture enough candidates before the expensive haversine sort.
+const BOX_SIZES: [number, number, number][] = [
+  // [maxLimit, latDeg, lngDeg]
+  [10, 0.15, 0.18],   // ~17km — ample for 10 nearest in cities
+  [50, 0.35, 0.42],   // ~39km
+  [200, 0.6, 0.72],   // ~67km
+]
 
 function staticResponse(lat: number, lng: number, limit: number) {
-  const shelters: ShelterRow[] = SHELTERS.map((s) => ({
-    ...s,
+  // Spatial pre-filter: narrow candidates via cheap lat/lng box before haversine
+  let candidates = SHELTERS
+  const boxSize = BOX_SIZES.find(([maxLim]) => limit <= maxLim)
+  if (boxSize) {
+    const [, latDeg, lngDeg] = boxSize
+    const filtered = SHELTERS.filter(
+      (s) => Math.abs(s.lat - lat) <= latDeg && Math.abs(s.lng - lng) <= lngDeg
+    )
+    // Only use the filter if it returned enough candidates
+    if (filtered.length >= limit) candidates = filtered
+  }
+
+  const shelters: ShelterRow[] = candidates.map((s) => ({
+    id: s.id,
+    name: buildName(s),
+    type: s.type,
+    lat: s.lat,
+    lng: s.lng,
     meters: haversine(lat, lng, s.lat, s.lng),
+    address: s.address,
+    neighborhood: s.neighborhood,
+    city_en: s.city_en,
+    city_he: s.city_he,
+    capacity: s.capacity,
+    sources: s.sources,
   }))
   shelters.sort((a, b) => a.meters - b.meters)
-  return NextResponse.json({ shelters: shelters.slice(0, limit) })
+
+  const response = NextResponse.json({ shelters: shelters.slice(0, limit) })
+  response.headers.set("Cache-Control", "public, max-age=300, s-maxage=600, stale-while-revalidate=3600")
+  return response
 }
 
 export async function GET(request: NextRequest) {
@@ -100,9 +157,17 @@ export async function GET(request: NextRequest) {
             lat: Number(row.lat),
             lng: Number(row.lon ?? row.lng),
             meters: distance,
+            address: row.address as string | undefined,
+            neighborhood: row.neighborhood as string | undefined,
+            city_en: row.city_en as string | undefined,
+            city_he: row.city_he as string | undefined,
+            capacity: row.capacity ? Number(row.capacity) : undefined,
+            sources: row.sources as string | undefined,
           }
         })
-        return NextResponse.json({ shelters })
+        const response = NextResponse.json({ shelters })
+        response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600")
+        return response
       }
 
       const { data: tableData, error: tableError } = await supabase
@@ -136,13 +201,15 @@ export async function GET(request: NextRequest) {
         }
 
         shelters.sort((a, b) => a.meters - b.meters)
-        return NextResponse.json({ shelters: shelters.slice(0, limitN) })
+        const response = NextResponse.json({ shelters: shelters.slice(0, limitN) })
+        response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600")
+        return response
       }
     } catch {
       // Supabase failed, fall through to static data
     }
   }
 
-  // Primary data source: static JSON file
+  // Primary data source: static JSON file (2,939 shelters)
   return staticResponse(latN, lngN, limitN)
 }

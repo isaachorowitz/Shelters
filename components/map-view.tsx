@@ -5,11 +5,11 @@ import type { LatLngExpression, LatLngBoundsExpression } from "leaflet"
 import L from "leaflet"
 import { useEffect, useRef, useCallback, useState } from "react"
 import type { Shelter, Coordinates } from "@/lib/types"
-import { Navigation } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { SHELTER_TYPES } from "@/lib/types"
+import { getShelterDisplayInfo } from "@/lib/shelter-display"
 import { haversineDistance } from "@/lib/utils"
 
-// Local marker icons to avoid CORS
+// Local marker icons — only used for user location (1 DOM element)
 const defaultIcon = L.icon({
   iconUrl: "/leaflet/marker-icon.png",
   iconRetinaUrl: "/leaflet/marker-icon-2x.png",
@@ -18,20 +18,6 @@ const defaultIcon = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
-})
-
-const shelterIcon = L.divIcon({
-  html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#DC2626,#991B1B);border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(220,38,38,0.5)"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg></div>`,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
-  className: "shelter-marker",
-})
-
-const nearestShelterIcon = L.divIcon({
-  html: `<div style="width:42px;height:42px;background:linear-gradient(135deg,#DC2626,#7F1D1D);border:3px solid #FCD34D;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(220,38,38,0.7),0 0 24px rgba(252,211,77,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg></div>`,
-  iconSize: [42, 42],
-  iconAnchor: [21, 21],
-  className: "shelter-marker",
 })
 
 const userLocationIcon = L.divIcon({
@@ -49,9 +35,10 @@ interface MapViewProps {
   mapHeight?: string
   onLocationUpdate?: (location: Coordinates) => void
   nearbyShelters?: Shelter[]
+  focusedShelterId?: string | null
+  onFocusHandled?: () => void
 }
 
-// Expanded bounds with generous buffer to prevent white edges when panning
 const ISRAEL_BOUNDS: LatLngBoundsExpression = [
   [28.5, 33.5],
   [34.0, 36.5],
@@ -59,6 +46,7 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
 
 const ROUTE_COLORS = ["#ef4444", "#f97316", "#eab308"]
 const MIN_MOVE_DISTANCE = 10
+const VIEWPORT_PAD = 0.3 // 30% buffer beyond viewport for smooth panning
 
 function MapController({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap()
@@ -124,41 +112,217 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (loc: Coordi
   return null
 }
 
+// --- Helpers for imperative popup content ---
+
+function escapeHtml(s: string): string {
+  const el = document.createElement("span")
+  el.textContent = s
+  return el.innerHTML
+}
+
+function getNavUrl(shelter: Shelter, userLocation: Coordinates | null): string {
+  const dest = `${shelter.coordinates.lat},${shelter.coordinates.lng}`
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const isAndroid = /Android/.test(navigator.userAgent)
+
+  if (isIOS) return `maps://?daddr=${dest}&dirflg=w`
+  if (isAndroid) return `google.navigation:q=${dest}&mode=w`
+  const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : ""
+  return `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ""}&destination=${dest}&travelmode=walking`
+}
+
+function buildPopupContent(
+  shelter: Shelter,
+  nearbyIdx: number,
+  userLocation: Coordinates | null,
+): HTMLElement {
+  const container = document.createElement("div")
+  container.style.cssText = "min-width:200px;font-family:inherit"
+
+  const display = getShelterDisplayInfo(shelter)
+
+  // Primary line: address or best available
+  let html = `<div style="font-size:14px;font-weight:700;margin-bottom:2px" dir="auto">${escapeHtml(display.primaryLine)}</div>`
+
+  // Secondary line: context (neighborhood, city)
+  if (display.secondaryLine) {
+    html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:2px" dir="auto">${escapeHtml(display.secondaryLine)}</div>`
+  }
+
+  // Meaningful name if different from primary
+  if (display.meaningfulName) {
+    html += `<div style="color:#6b7280;font-size:10px;margin-bottom:4px" dir="auto">${escapeHtml(display.meaningfulName)}</div>`
+  }
+
+  // Type label
+  html += `<div style="color:#ef4444;font-weight:700;font-size:11px;margin-bottom:4px" dir="auto">${escapeHtml(display.typeLabel)}`
+  if (shelter.capacity != null && shelter.capacity > 0) {
+    html += ` &middot; ${shelter.capacity} ppl`
+  }
+  html += `</div>`
+
+  if (shelter.distance != null) {
+    const distText = shelter.distance < 1000
+      ? `${Math.round(shelter.distance)}m away`
+      : `${(shelter.distance / 1000).toFixed(1)} km away`
+    html += `<div style="color:#d1d5db;font-weight:600;margin-bottom:4px">${distText}</div>`
+  }
+
+  if (shelter.etas) {
+    html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:8px">Walk: ${shelter.etas.walk} min &middot; Run: ${shelter.etas.run} min</div>`
+  }
+
+  if (nearbyIdx >= 0 && nearbyIdx < 3) {
+    html += `<div style="background:${ROUTE_COLORS[nearbyIdx]};color:white;font-weight:700;font-size:11px;padding:4px 8px;border-radius:6px;text-align:center;margin-bottom:8px">#${nearbyIdx + 1} NEAREST</div>`
+  }
+
+  const navUrl = getNavUrl(shelter, userLocation)
+  html += `<a href="${navUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;background:#DC2626;color:white;font-weight:700;padding:8px 12px;font-size:13px;border-radius:8px;text-align:center;text-decoration:none;cursor:pointer">GET DIRECTIONS / נווט</a>`
+
+  container.innerHTML = html
+  return container
+}
+
+/**
+ * ShelterLayer — renders shelter markers imperatively on the Canvas renderer.
+ *
+ * Why imperative? With 500+ markers, React component reconciliation is expensive.
+ * By creating L.circleMarker instances directly and managing a LayerGroup,
+ * all markers are batch-rendered on a single <canvas> element with zero DOM overhead.
+ *
+ * Viewport filtering: only markers within the padded viewport are added to the layer group.
+ * Markers outside the viewport are removed. This keeps rendering O(visible) not O(total).
+ */
+function ShelterLayer({
+  shelters,
+  nearbyShelters,
+  userLocation,
+  focusedShelterId,
+  onFocusHandled,
+}: {
+  shelters: Shelter[]
+  nearbyShelters: Shelter[]
+  userLocation: Coordinates | null
+  focusedShelterId?: string | null
+  onFocusHandled?: () => void
+}) {
+  const map = useMap()
+  const layerGroupRef = useRef<L.LayerGroup>(L.layerGroup())
+  const markersRef = useRef<Map<string, L.CircleMarker>>(new Map())
+  const userLocationRef = useRef(userLocation)
+  userLocationRef.current = userLocation
+  const nearbySheltersRef = useRef(nearbyShelters)
+  nearbySheltersRef.current = nearbyShelters
+
+  // Sync visible markers to current viewport
+  const syncViewport = useCallback(() => {
+    const bounds = map.getBounds().pad(VIEWPORT_PAD)
+    const lg = layerGroupRef.current
+
+    markersRef.current.forEach((marker) => {
+      const inView = bounds.contains(marker.getLatLng())
+      if (inView && !lg.hasLayer(marker)) {
+        lg.addLayer(marker)
+      } else if (!inView && lg.hasLayer(marker)) {
+        lg.removeLayer(marker)
+      }
+    })
+  }, [map])
+
+  // Rebuild all marker instances when shelter data changes
+  useEffect(() => {
+    const lg = layerGroupRef.current
+
+    // Clean up existing markers
+    markersRef.current.forEach((m) => {
+      m.off("click")
+      lg.removeLayer(m)
+    })
+    markersRef.current.clear()
+
+    const nearestId = nearbyShelters[0]?.id
+    const nearbySet = new Set(nearbyShelters.slice(0, 3).map((s) => s.id))
+
+    for (const shelter of shelters) {
+      const isNearest = shelter.id === nearestId
+      const isTopNearby = nearbySet.has(shelter.id)
+
+      const cm = L.circleMarker(
+        [shelter.coordinates.lat, shelter.coordinates.lng],
+        {
+          radius: isNearest ? 10 : isTopNearby ? 8 : 5,
+          fillColor: "#DC2626",
+          fillOpacity: isNearest ? 1 : isTopNearby ? 0.9 : 0.7,
+          color: isNearest ? "#FCD34D" : isTopNearby ? "#ffffff" : "rgba(255,255,255,0.25)",
+          weight: isNearest ? 3 : isTopNearby ? 2 : 1,
+          interactive: true,
+        }
+      )
+
+      // Lazy popup — DOM only created on click, not for all 500 markers
+      const s = shelter // capture in closure
+      cm.on("click", () => {
+        const nearbyIdx = nearbySheltersRef.current.findIndex((ns) => ns.id === s.id)
+        const content = buildPopupContent(s, nearbyIdx, userLocationRef.current)
+        cm.bindPopup(content, { maxWidth: 280, className: "shelter-popup" }).openPopup()
+      })
+
+      markersRef.current.set(shelter.id, cm)
+    }
+
+    // Initial viewport sync
+    syncViewport()
+  }, [shelters, nearbyShelters, syncViewport])
+
+  // Mount layer group + listen for viewport changes
+  useEffect(() => {
+    const lg = layerGroupRef.current
+    lg.addTo(map)
+    map.on("moveend", syncViewport)
+
+    return () => {
+      map.off("moveend", syncViewport)
+      lg.clearLayers()
+      lg.remove()
+    }
+  }, [map, syncViewport])
+
+  // Focus on a specific shelter (from directory "Show on Map")
+  useEffect(() => {
+    if (!focusedShelterId) return
+    const marker = markersRef.current.get(focusedShelterId)
+    if (marker) {
+      const latlng = marker.getLatLng()
+      // Ensure marker is in the layer group
+      const lg = layerGroupRef.current
+      if (!lg.hasLayer(marker)) lg.addLayer(marker)
+      // Fly to the shelter and open its popup
+      map.flyTo(latlng, 17, { duration: 1 })
+      setTimeout(() => {
+        marker.fire("click")
+      }, 1100) // wait for flyTo to complete
+    }
+    onFocusHandled?.()
+  }, [focusedShelterId, map, onFocusHandled])
+
+  return null
+}
+
 export default function MapView({
   userLocation,
   shelters,
   mapHeight = "100vh",
   onLocationUpdate,
   nearbyShelters = [],
+  focusedShelterId,
+  onFocusHandled,
 }: MapViewProps) {
-  // Unique key per mount cycle to prevent "container reused" error in React Strict Mode
   const [mapKey] = useState(() => Math.random())
   const defaultCenter: LatLngExpression = [32.0853, 34.7818]
   const currentCenter: LatLngExpression = userLocation
     ? [userLocation.lat, userLocation.lng]
     : defaultCenter
   const currentZoom = userLocation ? 16 : 13
-
-  const handleNavigate = useCallback(
-    (shelter: Shelter) => {
-      if (!shelter.coordinates) return
-      const dest = `${shelter.coordinates.lat},${shelter.coordinates.lng}`
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      const isAndroid = /Android/.test(navigator.userAgent)
-
-      let url: string
-      if (isIOS) {
-        url = `maps://?daddr=${dest}&dirflg=w`
-      } else if (isAndroid) {
-        url = `google.navigation:q=${dest}&mode=w`
-      } else {
-        const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : ""
-        url = `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ""}&destination=${dest}&travelmode=walking`
-      }
-      window.open(url, "_blank", "noopener,noreferrer")
-    },
-    [userLocation]
-  )
 
   return (
     <div
@@ -177,6 +341,7 @@ export default function MapView({
         zoomControl={false}
         maxBounds={ISRAEL_BOUNDS}
         maxBoundsViscosity={0.8}
+        preferCanvas
       >
         <MapController center={currentCenter} zoom={currentZoom} />
         <LocationTracker onLocationUpdate={onLocationUpdate} />
@@ -187,10 +352,12 @@ export default function MapView({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           maxZoom={19}
           minZoom={7}
-          keepBuffer={6}
+          keepBuffer={4}
+          updateWhenZooming={false}
+          updateWhenIdle={true}
         />
 
-        {/* Routes to nearest shelters */}
+        {/* Routes to nearest shelters — max 3 polylines, lightweight */}
         {userLocation &&
           nearbyShelters.slice(0, 3).map((shelter, i) => (
             <Polyline
@@ -206,7 +373,7 @@ export default function MapView({
             />
           ))}
 
-        {/* User location */}
+        {/* User location — single DOM marker */}
         {userLocation && (
           <>
             <Circle
@@ -226,54 +393,14 @@ export default function MapView({
           </>
         )}
 
-        {/* Shelter markers */}
-        {shelters.map((shelter) => {
-          const nearbyIdx = nearbyShelters.findIndex((ns) => ns.id === shelter.id)
-          const isNearest = nearbyIdx === 0
-          return (
-            <Marker
-              key={shelter.id}
-              position={[shelter.coordinates.lat, shelter.coordinates.lng]}
-              icon={isNearest ? nearestShelterIcon : shelterIcon}
-            >
-              <Popup>
-                <div className="text-sm font-bold min-w-[200px]">
-                  <strong className="text-base block mb-1">{shelter.name}</strong>
-                  <div className="text-red-500 font-bold uppercase mb-2 text-xs">
-                    {shelter.type} SHELTER
-                  </div>
-                  {shelter.distance != null && (
-                    <div className="text-gray-300 font-semibold mb-1">
-                      {shelter.distance < 1000
-                        ? `${Math.round(shelter.distance)}m away`
-                        : `${(shelter.distance / 1000).toFixed(1)} km away`}
-                    </div>
-                  )}
-                  {shelter.etas && (
-                    <div className="text-gray-400 text-xs mb-3">
-                      Walk: {shelter.etas.walk} min &middot; Run: {shelter.etas.run} min
-                    </div>
-                  )}
-                  {nearbyIdx >= 0 && nearbyIdx < 3 && (
-                    <div
-                      className="mb-2 px-2 py-1 rounded text-xs font-bold text-white text-center"
-                      style={{ backgroundColor: ROUTE_COLORS[nearbyIdx] }}
-                    >
-                      #{nearbyIdx + 1} NEAREST
-                    </div>
-                  )}
-                  <Button
-                    onClick={() => handleNavigate(shelter)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 text-sm rounded-lg"
-                  >
-                    <Navigation className="mr-1 h-4 w-4" aria-hidden="true" />
-                    GET DIRECTIONS
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          )
-        })}
+        {/* Shelter markers — imperative Canvas layer for performance */}
+        <ShelterLayer
+          shelters={shelters}
+          nearbyShelters={nearbyShelters}
+          userLocation={userLocation}
+          focusedShelterId={focusedShelterId}
+          onFocusHandled={onFocusHandled}
+        />
       </MapContainer>
     </div>
   )
