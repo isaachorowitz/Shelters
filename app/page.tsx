@@ -7,7 +7,7 @@ import ShelterPanel from "@/components/shelter-panel"
 import AddressSearch from "@/components/address-search"
 import ShelterDirectory from "@/components/shelter-directory"
 import ShareShelterDialog from "@/components/share-shelter-dialog"
-import { Loader2, MapPin, Shield, RefreshCw, SearchX } from "lucide-react"
+import { Loader2, MapPin, Shield, RefreshCw, SearchX, LocateFixed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import type { Shelter, ShelterApiResponse, Coordinates } from "@/lib/types"
@@ -92,8 +92,10 @@ export default function HomePage() {
   const [shareShelter, setShareShelter] = useState<Shelter | null>(null)
   const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null)
   const [flyToLocation, setFlyToLocation] = useState<{ coords: Coordinates; zoom: number; key: number } | null>(null)
+  const [allMapShelters, setAllMapShelters] = useState<Shelter[]>([])
   const lastFetchLocationRef = useRef<Coordinates | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const allSheltersLoadedRef = useRef(false)
 
   // The effective location for shelter lookups: search overrides user location
   const effectiveLocation = searchLocation ?? userLocation
@@ -126,13 +128,13 @@ export default function HomePage() {
         setLoadingLocation(false)
         if (err.code === 1) {
           setPermissionDenied(true)
-          setLocationError("Location access denied. Enable location to find shelters.")
+          setLocationError("Location access was denied. Turn on location to find shelters.")
         } else if (err.code === 2) {
-          setLocationError("Unable to determine location. Check device settings.")
+          setLocationError("Could not find your location. Check your device settings.")
         } else if (err.code === 3) {
-          setLocationError("Location request timed out. Try again.")
+          setLocationError("Location took too long. Tap to try again.")
         } else {
-          setLocationError("Unable to retrieve location. Enable location services.")
+          setLocationError("Could not get your location. Turn on location services and try again.")
         }
       },
       { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: 0 }
@@ -193,7 +195,45 @@ export default function HomePage() {
     }
   }, [userLocation])
 
-  // Fetch shelters when effective location changes — single API call
+  // Load ALL shelters for map display (once)
+  useEffect(() => {
+    if (allSheltersLoadedRef.current) return
+    const ac = new AbortController()
+
+    const loadAll = async () => {
+      try {
+        // Use center of Israel as reference point; we need all shelters for map
+        const res = await fetch(
+          `/api/shelters?lat=31.5&lng=34.8&limit=3000`,
+          { signal: ac.signal }
+        )
+        if (!res.ok) return
+        const { shelters: raw } = await res.json()
+        // Transform without distance/etas since we just need coordinates for map display
+        const all = (raw as ShelterApiResponse[]).map((s) => ({
+          id: String(s.id),
+          name: s.name,
+          type: s.type,
+          coordinates: { lat: s.lat, lng: s.lng },
+          address: s.address,
+          neighborhood: s.neighborhood,
+          cityEn: s.city_en,
+          cityHe: s.city_he,
+          capacity: s.capacity,
+          sources: s.sources,
+        } as Shelter))
+        setAllMapShelters(all)
+        allSheltersLoadedRef.current = true
+      } catch {
+        // Will use nearby shelters as fallback
+      }
+    }
+
+    loadAll()
+    return () => ac.abort()
+  }, [])
+
+  // Fetch nearby shelters when effective location changes
   useEffect(() => {
     if (!effectiveLocation || locationChanged) return
     const ac = new AbortController()
@@ -245,7 +285,21 @@ export default function HomePage() {
   }, [])
 
   const isInitialLoading = loadingLocation && !userLocation && !locationError
-  const nearbyForRoutes = useMemo(() => nearbyShelters.slice(0, 3), [nearbyShelters])
+  const nearbyForRoutes = useMemo(() => nearbyShelters.slice(0, 5), [nearbyShelters])
+
+  // Merge all map shelters with nearby shelters (which have distance/etas)
+  const sheltersForMap = useMemo(() => {
+    if (allMapShelters.length === 0) return allShelters
+    // Create a map of nearby shelters with their distance data
+    const nearbyMap = new Map(allShelters.map((s) => [s.id, s]))
+    return allMapShelters.map((s) => nearbyMap.get(s.id) ?? s)
+  }, [allMapShelters, allShelters])
+
+  const handleRecenterToUser = useCallback(() => {
+    if (userLocation) {
+      setFlyToLocation({ coords: userLocation, zoom: 16, key: Date.now() })
+    }
+  }, [userLocation])
 
   return (
     <div className="flex flex-col bg-black" style={{ height: "100dvh", overflow: "hidden" }}>
@@ -293,7 +347,7 @@ export default function HomePage() {
         <main className="flex-1 relative overflow-hidden" role="main">
           <MapView
             userLocation={effectiveLocation}
-            shelters={allShelters}
+            shelters={sheltersForMap}
             mapHeight="100%"
             onLocationUpdate={isTracking && !searchLocation ? handleLocationUpdate : undefined}
             nearbyShelters={nearbyForRoutes}
@@ -301,6 +355,22 @@ export default function HomePage() {
             onFocusHandled={handleFocusHandled}
             flyToLocation={flyToLocation}
           />
+
+          {/* My Location button */}
+          {userLocation && (
+            <button
+              onClick={handleRecenterToUser}
+              className="absolute top-4 left-3 z-30 w-11 h-11 flex items-center justify-center rounded-full shadow-lg card-press"
+              style={{
+                background: "rgba(0,0,0,0.88)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                backdropFilter: "blur(12px)",
+              }}
+              aria-label="Go to my location"
+            >
+              <LocateFixed className="h-5 w-5 text-blue-400" />
+            </button>
+          )}
 
           {locationChanged && !loadingLocation && (
             <Button
@@ -331,8 +401,8 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-4">
                 <Shield className="h-10 w-10 text-red-500" aria-hidden="true" />
               </div>
-              <p className="text-white font-black text-xl">ACQUIRING LOCATION</p>
-              <p className="text-white/50 text-sm mt-1">Finding nearest bomb shelters...</p>
+              <p className="text-white font-black text-xl">FINDING YOUR LOCATION</p>
+              <p className="text-white/50 text-sm mt-1">Locating nearest shelters...</p>
             </div>
           )}
 
@@ -368,16 +438,16 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <MapPin className="h-8 w-8 text-red-500" aria-hidden="true" />
                   </div>
-                  <h2 className="text-xl font-black text-white mb-2">LOCATION REQUIRED</h2>
+                  <h2 className="text-xl font-black text-white mb-2">LOCATION NEEDED</h2>
                   <p className="text-white/70 mb-4 text-sm leading-relaxed">
-                    Enable location services to find the nearest bomb shelters.
+                    Allow location access to find the nearest shelters to you.
                   </p>
                   <Button
                     onClick={requestLocation}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg rounded-xl mb-4"
                     aria-label="Enable location access"
                   >
-                    ENABLE LOCATION
+                    ALLOW LOCATION
                   </Button>
                   <p className="text-xs text-white/50 mb-3">Or search for an address:</p>
                   <AddressSearch onLocationSelect={(coords, label) => {

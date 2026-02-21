@@ -45,7 +45,7 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
   [34.0, 36.5],
 ]
 
-const ROUTE_COLORS = ["#ef4444", "#f97316", "#eab308"]
+const ROUTE_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6"]
 const MIN_MOVE_DISTANCE = 10
 
 function MapController({ center, zoom }: { center: LatLngExpression; zoom: number }) {
@@ -172,7 +172,7 @@ function buildPopupContent(
     html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:8px">Walk: ${shelter.etas.walk} min &middot; Run: ${shelter.etas.run} min</div>`
   }
 
-  if (nearbyIdx >= 0 && nearbyIdx < 3) {
+  if (nearbyIdx >= 0 && nearbyIdx < 5) {
     html += `<div style="background:${ROUTE_COLORS[nearbyIdx]};color:white;font-weight:700;font-size:11px;padding:4px 8px;border-radius:6px;text-align:center;margin-bottom:8px">#${nearbyIdx + 1} NEAREST</div>`
   }
 
@@ -234,20 +234,57 @@ function ShelterLayer({
     markersRef.current.clear()
 
     const nearestId = nearbyShelters[0]?.id
-    const nearbySet = new Set(nearbyShelters.slice(0, 3).map((s) => s.id))
+    const nearbyIds = nearbyShelters.slice(0, 5).map((s) => s.id)
+    const nearbySet = new Set(nearbyIds)
 
+    // Render regular shelters first, then nearby ones on top
+    const regularShelters: Shelter[] = []
+    const nearbyShelterList: Shelter[] = []
     for (const shelter of shelters) {
+      if (nearbySet.has(shelter.id)) {
+        nearbyShelterList.push(shelter)
+      } else {
+        regularShelters.push(shelter)
+      }
+    }
+
+    // Regular shelters (rendered first, appear below)
+    for (const shelter of regularShelters) {
+      const cm = L.circleMarker(
+        [shelter.coordinates.lat, shelter.coordinates.lng],
+        {
+          radius: 5,
+          fillColor: "#DC2626",
+          fillOpacity: 0.7,
+          color: "rgba(255,255,255,0.25)",
+          weight: 1,
+          interactive: true,
+        }
+      )
+
+      const s = shelter
+      cm.on("click", () => {
+        const nearbyIdx = nearbySheltersRef.current.findIndex((ns) => ns.id === s.id)
+        const content = buildPopupContent(s, nearbyIdx, userLocationRef.current)
+        cm.bindPopup(content, { maxWidth: 280, className: "shelter-popup" }).openPopup()
+      })
+
+      markersRef.current.set(shelter.id, cm)
+    }
+
+    // Nearby shelters (rendered last, appear on top)
+    for (const shelter of nearbyShelterList) {
       const isNearest = shelter.id === nearestId
-      const isTopNearby = nearbySet.has(shelter.id)
+      const isTop3 = nearbyIds.indexOf(shelter.id) < 3
 
       const cm = L.circleMarker(
         [shelter.coordinates.lat, shelter.coordinates.lng],
         {
-          radius: isNearest ? 10 : isTopNearby ? 8 : 5,
-          fillColor: "#DC2626",
-          fillOpacity: isNearest ? 1 : isTopNearby ? 0.9 : 0.7,
-          color: isNearest ? "#FCD34D" : isTopNearby ? "#ffffff" : "rgba(255,255,255,0.25)",
-          weight: isNearest ? 3 : isTopNearby ? 2 : 1,
+          radius: isNearest ? 12 : isTop3 ? 9 : 7,
+          fillColor: isNearest ? "#FF1744" : "#DC2626",
+          fillOpacity: 1,
+          color: isNearest ? "#FCD34D" : isTop3 ? "#ffffff" : "#fbbf24",
+          weight: isNearest ? 4 : 2,
           interactive: true,
         }
       )
@@ -368,9 +405,9 @@ export default function MapView({
           updateWhenIdle={true}
         />
 
-        {/* Routes to nearest shelters — max 3 polylines, lightweight */}
+        {/* Routes to nearest shelters — 5 polylines */}
         {userLocation &&
-          nearbyShelters.slice(0, 3).map((shelter, i) => (
+          nearbyShelters.slice(0, 5).map((shelter, i) => (
             <Polyline
               key={`route-${shelter.id}`}
               positions={[
@@ -378,8 +415,8 @@ export default function MapView({
                 [shelter.coordinates.lat, shelter.coordinates.lng],
               ]}
               color={ROUTE_COLORS[i]}
-              weight={i === 0 ? 4 : 3}
-              opacity={i === 0 ? 0.9 : 0.5}
+              weight={i === 0 ? 5 : i < 3 ? 3 : 2}
+              opacity={i === 0 ? 1 : i < 3 ? 0.6 : 0.4}
               dashArray={i === 0 ? undefined : "8, 8"}
             />
           ))}

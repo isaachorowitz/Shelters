@@ -116,8 +116,8 @@
 .leaflet-control-zoom {
   border: none !important;
   margin-right: 12px !important;
-  /* 45% of viewport height (half-sheet) + extra gap */
-  margin-bottom: calc(45vh + 16px) !important;
+  /* Above the bottom sheet peek height (44% viewport) + gap */
+  margin-bottom: calc(46vh + 16px) !important;
 }
 @media (min-width: 768px) {
   .leaflet-control-zoom {

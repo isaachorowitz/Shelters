@@ -129,9 +129,9 @@ export async function GET(request: NextRequest) {
   if (latN < -90 || latN > 90 || lngN < -180 || lngN > 180) {
     return NextResponse.json({ error: "Invalid coordinates" }, { status: 400 })
   }
-  if (limitN < 1 || limitN > 500) {
+  if (limitN < 1 || limitN > 5000) {
     return NextResponse.json(
-      { error: "Limit must be between 1 and 500" },
+      { error: "Limit must be between 1 and 5000" },
       { status: 400 }
     )
   }

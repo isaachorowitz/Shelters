@@ -17,9 +17,9 @@ interface ShelterPanelProps {
 }
 
 // Snap points as % of viewport height (from bottom)
-const SNAP_PEEK = 0.28   // collapsed: just shows the handle + nearest summary
-const SNAP_HALF = 0.52   // half sheet: shows a few cards
-const SNAP_FULL = 0.80   // full sheet: almost full screen
+const SNAP_PEEK = 0.44   // collapsed: shows handle + first full card with Navigate button
+const SNAP_HALF = 0.60   // half sheet: shows a couple cards
+const SNAP_FULL = 0.85   // full sheet: almost full screen
 
 function snapTo(fraction: number): number {
   // returns actual px height
@@ -46,8 +46,8 @@ function ShelterList({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-white text-center" role="status">
         <Loader2 className="h-7 w-7 animate-spin text-red-500 mb-3" aria-hidden="true" />
-        <p className="text-sm font-bold">Locating Shelters</p>
-        <p className="text-xs text-white/40 mt-1">Scanning nearby area...</p>
+        <p className="text-sm font-bold">Finding Nearest Shelters</p>
+        <p className="text-xs text-white/40 mt-1">Scanning your area...</p>
       </div>
     )
   }
@@ -57,8 +57,8 @@ function ShelterList({
         <div className="w-12 h-12 rounded-full bg-amber-500/15 flex items-center justify-center mb-3">
           <MapPin className="h-6 w-6 text-amber-400" />
         </div>
-        <p className="text-sm font-bold">Location Required</p>
-        <p className="text-xs text-white/40 mt-1 max-w-[180px]">Enable location to find nearby shelters</p>
+        <p className="text-sm font-bold">Location Needed</p>
+        <p className="text-xs text-white/40 mt-1 max-w-[180px]">Turn on location to find shelters near you</p>
       </div>
     )
   }
@@ -82,6 +82,7 @@ function ShelterList({
             rank={i + 1}
             userLocation={userLocation}
             onShare={onOpenShare ? (s) => onOpenShare(s) : undefined}
+            isClosest={i === 0}
           />
         </div>
       ))}
@@ -106,7 +107,7 @@ function SidebarPanel({
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-red-500 flex-shrink-0" />
           <span className="text-sm font-black text-white tracking-wide">
-            {isLoading ? "SCANNING..." : `NEAREST SHELTERS${shelters.length > 0 ? ` (${shelters.length})` : ""}`}
+            {isLoading ? "FINDING..." : `${shelters.length > 0 ? `${shelters.length} ` : ""}NEAREST SHELTERS`}
           </span>
         </div>
         {onOpenShare && (
@@ -162,10 +163,10 @@ function BottomSheet({
   const startHRef = useRef(0)
   const sheetRef = useRef<HTMLDivElement>(null)
 
-  // When shelters arrive, snap to half
+  // When shelters arrive, snap to peek (shows full first card)
   useEffect(() => {
     if (!isLoading && shelters.length > 0) {
-      setHeight(snapTo(SNAP_HALF))
+      setHeight(snapTo(SNAP_PEEK))
     }
   }, [isLoading, shelters.length])
 
@@ -258,14 +259,14 @@ function BottomSheet({
             <div className="flex flex-col min-w-0">
               <span className="text-[15px] font-black text-white leading-tight tracking-tight">
                 {isLoading
-                  ? "Finding shelters…"
+                  ? "Finding shelters..."
                   : shelters.length > 0
-                    ? `${shelters.length} Shelters Nearby`
+                    ? `${shelters.length} Nearest Shelters`
                     : "No Shelters Found"}
               </span>
               {!isLoading && nearestDist && (
                 <span className="text-[12px] text-white/45 font-medium leading-tight mt-0.5">
-                  Nearest: <span className="text-red-400 font-bold">{nearestDist}</span>
+                  Closest: <span className="text-red-400 font-bold">{nearestDist}</span>
                   {shelters[0]?.etas && (
                     <span className="text-white/30"> · {shelters[0].etas.walk} min walk</span>
                   )}

@@ -33,6 +33,7 @@ interface ShelterCardProps {
   variant?: "nearby" | "directory"
   onShowOnMap?: (shelter: Shelter) => void
   onShare?: (shelter: Shelter) => void
+  isClosest?: boolean
 }
 
 export default function ShelterCard({
@@ -42,6 +43,7 @@ export default function ShelterCard({
   variant = "nearby",
   onShowOnMap,
   onShare,
+  isClosest,
 }: ShelterCardProps) {
   const [showNavModal, setShowNavModal] = useState(false)
   const display = useMemo(() => getShelterDisplayInfo(shelter), [shelter])
@@ -142,7 +144,7 @@ export default function ShelterCard({
               className="h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-semibold px-3"
             >
               <Navigation className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-              Navigate / נווט
+              Directions / נווט
             </Button>
           </div>
         </article>
@@ -163,11 +165,24 @@ export default function ShelterCard({
       <article
         className="card-press rounded-2xl overflow-hidden"
         style={{
-          background: "rgba(22,22,22,0.95)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: isClosest ? "rgba(220,38,38,0.08)" : "rgba(22,22,22,0.95)",
+          border: isClosest ? "2px solid rgba(220,38,38,0.5)" : "1px solid rgba(255,255,255,0.08)",
+          boxShadow: isClosest ? "0 0 20px rgba(220,38,38,0.15)" : undefined,
         }}
-        aria-label={`${display.primaryLine} - shelter${distanceText ? `, ${distanceText} away` : ""}`}
+        aria-label={`${display.primaryLine} - ${isClosest ? "closest " : ""}shelter${distanceText ? `, ${distanceText} away` : ""}`}
       >
+        {/* Closest badge */}
+        {isClosest && (
+          <div className="flex items-center gap-1.5 px-4 pt-3 pb-0">
+            <span
+              className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(220,38,38,0.25)", color: "#FCA5A5" }}
+            >
+              Closest Shelter
+            </span>
+          </div>
+        )}
+
         {/* Top bar: rank badge + info + distance */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
           {rank != null && (
@@ -175,7 +190,9 @@ export default function ShelterCard({
               className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-base text-white flex-shrink-0 shadow-lg ${
                 rank === 1 ? "bg-red-600 shadow-red-600/30"
                 : rank === 2 ? "bg-orange-500 shadow-orange-500/30"
-                : "bg-amber-500 shadow-amber-500/30"
+                : rank === 3 ? "bg-amber-500 shadow-amber-500/30"
+                : rank === 4 ? "bg-green-500 shadow-green-500/30"
+                : "bg-blue-500 shadow-blue-500/30"
               }`}
               aria-label={`Number ${rank} nearest`}
             >
@@ -225,10 +242,10 @@ export default function ShelterCard({
             aria-label="Estimated travel times"
           >
             {[
-              { icon: PersonStanding, label: shelter.etas.walk, mode: "Walk", color: "#4ade80" },
-              { icon: Run, label: shelter.etas.run, mode: "Run", color: "#fbbf24" },
-              { icon: Bike, label: shelter.etas.cycle, mode: "Bike", color: "#60a5fa" },
-              { icon: Zap, label: shelter.etas.scooter, mode: "Scooter", color: "#c084fc" },
+              { icon: PersonStanding, label: shelter.etas.walk, mode: "Walk", unit: "min", color: "#4ade80" },
+              { icon: Run, label: shelter.etas.run, mode: "Run", unit: "min", color: "#fbbf24" },
+              { icon: Bike, label: shelter.etas.cycle, mode: "Bike", unit: "min", color: "#60a5fa" },
+              { icon: Zap, label: shelter.etas.scooter, mode: "Scooter", unit: "min", color: "#c084fc" },
             ].map((eta) => (
               <div
                 key={eta.mode}
@@ -238,7 +255,10 @@ export default function ShelterCard({
                 aria-label={`${eta.mode}: ${eta.label} minutes`}
               >
                 <eta.icon className="h-4 w-4" style={{ color: eta.color }} aria-hidden="true" />
-                <span className="text-[15px] font-black text-white mt-1 leading-none">{eta.label}</span>
+                <div className="flex items-baseline gap-0.5 mt-1">
+                  <span className="text-[15px] font-black text-white leading-none">{eta.label}</span>
+                  <span className="text-[9px] text-white/40 font-bold">{eta.unit}</span>
+                </div>
                 <span className="text-[9px] text-white/35 font-semibold uppercase tracking-wide mt-0.5">{eta.mode}</span>
               </div>
             ))}
@@ -255,10 +275,10 @@ export default function ShelterCard({
               background: "#DC2626",
               boxShadow: "0 4px 20px rgba(220,38,38,0.35)",
             }}
-            aria-label="Navigate to shelter"
+            aria-label="Get directions to shelter"
           >
             <Navigation className="h-5 w-5" aria-hidden="true" />
-            Navigate
+            Get Directions
           </button>
           {onShare && (
             <button
@@ -327,7 +347,7 @@ function NavModal({
 
         {/* Title */}
         <div className="px-5 pt-2 pb-4 border-b border-white/6">
-          <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest text-center">Navigate to</p>
+          <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest text-center">Get Directions to</p>
           <p className="text-[15px] font-bold text-white text-center mt-1 truncate px-4" dir="auto">{primaryLine}</p>
         </div>
 
