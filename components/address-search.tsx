@@ -170,13 +170,17 @@ export default function AddressSearch({
   }, [])
 
   const inputPlaceholder = placeholder ?? (activeLabel ? "Search new address..." : "Search address...")
-  const inputHeight = compact ? "h-8" : "h-9"
-  const iconSize = compact ? "w-8 h-8" : "w-9 h-9"
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      <div className={`flex items-center ${inputHeight} bg-white/8 border border-white/10 rounded-full overflow-hidden focus-within:border-red-500/40 focus-within:bg-white/10 transition-all`}>
-        <div className={`flex items-center justify-center ${iconSize} flex-shrink-0`}>
+      <div
+        className="flex items-center h-9 rounded-full overflow-hidden transition-all"
+        style={{
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        <div className="flex items-center justify-center w-9 h-9 flex-shrink-0">
           {isSearching ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-red-400" aria-hidden="true" />
           ) : (
@@ -186,22 +190,27 @@ export default function AddressSearch({
         <input
           ref={inputRef}
           type="text"
+          inputMode="search"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => { if (results.length > 0) setShowResults(true) }}
           placeholder={inputPlaceholder}
-          className="flex-1 bg-transparent text-white text-xs py-1.5 pr-1 outline-none placeholder:text-white/30 min-w-0"
+          className="flex-1 bg-transparent text-white py-1.5 pr-1 outline-none placeholder:text-white/30 min-w-0"
+          style={{ fontSize: 16 /* prevent iOS zoom */ }}
           aria-label="Search for an address in Israel"
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
           dir="auto"
         />
         {query && (
           <button
             onClick={handleClear}
-            className="flex items-center justify-center w-7 h-7 mr-0.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0 transition-colors"
+            className="no-min-h flex items-center justify-center w-8 h-8 mr-0.5 rounded-full text-white/40 hover:text-white flex-shrink-0 transition-colors"
             aria-label="Clear search"
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </button>
         )}
       </div>

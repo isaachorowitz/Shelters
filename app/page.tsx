@@ -248,7 +248,7 @@ export default function HomePage() {
   const nearbyForRoutes = useMemo(() => nearbyShelters.slice(0, 3), [nearbyShelters])
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-black">
+    <div className="flex flex-col bg-black" style={{ height: "100dvh", overflow: "hidden" }}>
       <a
         href="#shelter-list-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-red-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold"
@@ -256,7 +256,7 @@ export default function HomePage() {
         Skip to shelter list
       </a>
 
-      {/* Top nav — fixed height 48px */}
+      {/* Top nav — 56px + safe-area-top */}
       <Header onOpenDirectory={handleOpenDirectory}>
         <AddressSearch
           onLocationSelect={handleSearchSelect}
@@ -267,12 +267,15 @@ export default function HomePage() {
         />
       </Header>
 
-      {/* Body below nav: sidebar + map */}
-      <div className="flex flex-1 overflow-hidden pt-12">
+      {/* Body — accounts for header height including safe-area-top */}
+      <div
+        className="flex flex-1 overflow-hidden"
+        style={{ paddingTop: "calc(56px + env(safe-area-inset-top))" }}
+      >
 
-        {/* ── Sidebar ─────────────────────────────────────────── */}
+        {/* ── Sidebar (md and up only) ─────────────────────────── */}
         <aside
-          className="w-[340px] shrink-0 flex flex-col bg-black border-r border-white/8 overflow-hidden z-20"
+          className="hidden md:flex w-[340px] shrink-0 flex-col bg-black border-r border-white/8 overflow-hidden z-20"
           aria-label="Nearest shelters"
         >
           <ShelterPanel
@@ -282,6 +285,7 @@ export default function HomePage() {
             userLocation={effectiveLocation}
             onOpenDirectory={handleOpenDirectory}
             onOpenShare={handleOpenShare}
+            sidebar
           />
         </aside>
 
@@ -384,6 +388,18 @@ export default function HomePage() {
               </div>
             </div>
           )}
+
+          {/* ── Mobile bottom sheet (hidden on md+) ────────────── */}
+          <div className="md:hidden">
+            <ShelterPanel
+              shelters={nearbyShelters}
+              isLoading={(!searchLocation && loadingLocation) || loadingShelters}
+              hasLocationError={!!locationError && !searchLocation}
+              userLocation={effectiveLocation}
+              onOpenDirectory={handleOpenDirectory}
+              onOpenShare={handleOpenShare}
+            />
+          </div>
         </main>
       </div>
 

@@ -161,19 +161,21 @@ export default function ShelterCard({
   return (
     <>
       <article
-        className="bg-neutral-900/80 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden"
+        className="card-press rounded-2xl overflow-hidden"
+        style={{
+          background: "rgba(22,22,22,0.95)",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
         aria-label={`${display.primaryLine} - shelter${distanceText ? `, ${distanceText} away` : ""}`}
       >
-        {/* Top bar: rank + primary info + distance */}
-        <div className="flex items-start gap-3 px-4 pt-3 pb-1">
+        {/* Top bar: rank badge + info + distance */}
+        <div className="flex items-center gap-3 px-4 pt-4 pb-2">
           {rank != null && (
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm text-white flex-shrink-0 mt-0.5 ${
-                rank === 1
-                  ? "bg-red-600"
-                  : rank === 2
-                    ? "bg-orange-600"
-                    : "bg-amber-600"
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-base text-white flex-shrink-0 shadow-lg ${
+                rank === 1 ? "bg-red-600 shadow-red-600/30"
+                : rank === 2 ? "bg-orange-500 shadow-orange-500/30"
+                : "bg-amber-500 shadow-amber-500/30"
               }`}
               aria-label={`Number ${rank} nearest`}
             >
@@ -181,90 +183,95 @@ export default function ShelterCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            {/* Primary: address or best available */}
-            <h3 className="text-base font-bold text-white leading-tight" dir="auto">
+            <h3 className="text-[15px] font-bold text-white leading-snug" dir="auto">
               {display.primaryLine}
             </h3>
-
-            {/* Secondary: neighborhood, city */}
             {display.secondaryLine && (
-              <p className="text-xs text-white/40 mt-0.5 truncate" dir="auto">
+              <p className="text-[12px] text-white/40 mt-0.5 truncate" dir="auto">
                 {display.secondaryLine}
-              </p>
-            )}
-
-            {/* Meaningful name if not already shown */}
-            {display.meaningfulName && (
-              <p className="text-[11px] text-white/25 mt-0.5 truncate" dir="auto">
-                {display.meaningfulName}
               </p>
             )}
           </div>
           {distanceText && (
-            <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-              <MapPin className="h-4 w-4 text-red-400" aria-hidden="true" />
-              <span className="text-lg font-black text-white">{distanceText}</span>
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span className="text-[22px] font-black text-white leading-none">{distanceText}</span>
+              <span className="text-[10px] text-red-400/80 font-semibold uppercase tracking-wide mt-0.5">away</span>
             </div>
           )}
         </div>
 
-        {/* Type + capacity inline */}
-        <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
-          <span className="text-xs font-semibold text-red-400/70" dir="auto">{typeChip}</span>
+        {/* Type chip */}
+        <div className="flex items-center gap-1.5 px-4 pb-2">
+          <span
+            className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(220,38,38,0.12)", color: "rgba(252,165,165,0.85)" }}
+          >
+            {typeChip}
+          </span>
           {capacityChip && (
-            <>
-              <span className="text-white/20 text-xs">&middot;</span>
-              <span className="text-xs text-white/30 flex items-center gap-0.5">
-                <Users className="h-3 w-3" aria-hidden="true" />
-                {capacityChip}
-              </span>
-            </>
+            <span className="text-[11px] text-white/25 flex items-center gap-0.5">
+              <Users className="h-3 w-3" aria-hidden="true" />
+              {capacityChip}
+            </span>
           )}
         </div>
 
         {/* ETA grid */}
         {shelter.etas && (
-          <div className="grid grid-cols-4 gap-1 px-3 py-2" role="list" aria-label="Estimated travel times">
+          <div
+            className="grid grid-cols-4 gap-1.5 mx-3 mb-3 p-1.5 rounded-xl"
+            style={{ background: "rgba(255,255,255,0.04)" }}
+            role="list"
+            aria-label="Estimated travel times"
+          >
             {[
-              { icon: PersonStanding, label: shelter.etas.walk, mode: "Walk", color: "text-green-400" },
-              { icon: Run, label: shelter.etas.run, mode: "Run", color: "text-amber-400" },
-              { icon: Bike, label: shelter.etas.cycle, mode: "Bike", color: "text-blue-400" },
-              { icon: Zap, label: shelter.etas.scooter, mode: "Scooter", color: "text-purple-400" },
+              { icon: PersonStanding, label: shelter.etas.walk, mode: "Walk", color: "#4ade80" },
+              { icon: Run, label: shelter.etas.run, mode: "Run", color: "#fbbf24" },
+              { icon: Bike, label: shelter.etas.cycle, mode: "Bike", color: "#60a5fa" },
+              { icon: Zap, label: shelter.etas.scooter, mode: "Scooter", color: "#c084fc" },
             ].map((eta) => (
               <div
                 key={eta.mode}
-                className="flex flex-col items-center py-1.5 rounded-lg bg-white/5"
+                className="flex flex-col items-center py-2 rounded-lg"
+                style={{ background: "rgba(255,255,255,0.04)" }}
                 role="listitem"
                 aria-label={`${eta.mode}: ${eta.label} minutes`}
               >
-                <eta.icon className={`h-4 w-4 ${eta.color}`} aria-hidden="true" />
-                <span className="text-sm font-bold text-white mt-0.5">{eta.label}</span>
-                <span className="text-[9px] text-white/50 font-medium uppercase">{eta.mode}</span>
+                <eta.icon className="h-4 w-4" style={{ color: eta.color }} aria-hidden="true" />
+                <span className="text-[15px] font-black text-white mt-1 leading-none">{eta.label}</span>
+                <span className="text-[9px] text-white/35 font-semibold uppercase tracking-wide mt-0.5">{eta.mode}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Navigate + Share buttons */}
-        <div className="px-3 pb-3 pt-1 flex gap-2">
-          <Button
+        {/* CTA row */}
+        <div className="px-3 pb-3 flex gap-2">
+          <button
             onClick={() => setShowNavModal(true)}
-            className="flex-1 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3.5 text-base rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-red-600/20"
             disabled={!shelter.coordinates}
+            className="card-press flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-black text-[15px] text-white disabled:opacity-40"
+            style={{
+              background: "#DC2626",
+              boxShadow: "0 4px 20px rgba(220,38,38,0.35)",
+            }}
             aria-label="Navigate to shelter"
           >
-            <Navigation className="mr-2 h-5 w-5" aria-hidden="true" />
-            NAVIGATE
-          </Button>
+            <Navigation className="h-5 w-5" aria-hidden="true" />
+            Navigate
+          </button>
           {onShare && (
-            <Button
+            <button
               onClick={() => onShare(shelter)}
-              variant="ghost"
-              className="w-12 h-auto bg-blue-600/15 hover:bg-blue-600/30 border border-blue-500/25 text-blue-400 rounded-xl transition-all flex-shrink-0"
+              className="card-press w-14 flex items-center justify-center rounded-2xl text-blue-400"
+              style={{
+                background: "rgba(59,130,246,0.12)",
+                border: "1px solid rgba(59,130,246,0.22)",
+              }}
               aria-label="Share shelter"
             >
-              <Share2 className="h-4 w-4" aria-hidden="true" />
-            </Button>
+              <Share2 className="h-5 w-5" aria-hidden="true" />
+            </button>
           )}
         </div>
       </article>
@@ -290,47 +297,76 @@ function NavModal({
   primaryLine: string
   onNavigate: (mapType: "google" | "apple" | "waze") => void
 }) {
+  if (!open) return null
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-neutral-950 border-2 border-red-500/40 text-white max-w-sm mx-auto rounded-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-black text-center">
-            CHOOSE NAVIGATION
-          </DialogTitle>
-          <DialogDescription className="text-center text-white/70 text-sm" dir="auto">
-            Walking directions to {primaryLine}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-2.5 mt-3">
-          <Button
-            onClick={() => onNavigate("google")}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
-          >
-            <Map className="h-5 w-5" aria-hidden="true" />
-            Google Maps
-            <ExternalLink className="h-4 w-4 ml-auto opacity-50" aria-hidden="true" />
-          </Button>
-
-          <Button
-            onClick={() => onNavigate("apple")}
-            className="w-full bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
-          >
-            <Smartphone className="h-5 w-5" aria-hidden="true" />
-            Apple Maps
-            <ExternalLink className="h-4 w-4 ml-auto opacity-50" aria-hidden="true" />
-          </Button>
-
-          <Button
-            onClick={() => onNavigate("waze")}
-            className="w-full bg-cyan-700 hover:bg-cyan-600 active:bg-cyan-500 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3"
-          >
-            <Navigation className="h-5 w-5" aria-hidden="true" />
-            Waze
-            <ExternalLink className="h-4 w-4 ml-auto opacity-50" aria-hidden="true" />
-          </Button>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        onClick={() => onOpenChange(false)}
+        aria-hidden="true"
+      />
+      {/* Action sheet — slides up from bottom like iOS */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl overflow-hidden"
+        style={{
+          background: "rgba(18,18,18,0.99)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderBottom: "none",
+          paddingBottom: "env(safe-area-inset-bottom)",
+          boxShadow: "0 -12px 60px rgba(0,0,0,0.8)",
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Choose navigation app"
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }} />
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Title */}
+        <div className="px-5 pt-2 pb-4 border-b border-white/6">
+          <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest text-center">Navigate to</p>
+          <p className="text-[15px] font-bold text-white text-center mt-1 truncate px-4" dir="auto">{primaryLine}</p>
+        </div>
+
+        {/* Options */}
+        <div className="p-4 space-y-2.5">
+          {[
+            { type: "google" as const, label: "Google Maps", icon: Map, color: "#4285F4", bg: "rgba(66,133,244,0.12)" },
+            { type: "apple" as const, label: "Apple Maps", icon: Smartphone, color: "#ffffff", bg: "rgba(255,255,255,0.08)" },
+            { type: "waze" as const, label: "Waze", icon: Navigation, color: "#33ccff", bg: "rgba(51,204,255,0.1)" },
+          ].map(({ type, label, icon: Icon, color, bg }) => (
+            <button
+              key={type}
+              onClick={() => onNavigate(type)}
+              className="card-press w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-left"
+              style={{ background: bg, border: `1px solid ${color}22` }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: `${color}18` }}
+              >
+                <Icon className="h-5 w-5" style={{ color }} aria-hidden="true" />
+              </div>
+              <span className="text-[16px] font-bold" style={{ color }}>{label}</span>
+              <ExternalLink className="h-4 w-4 ml-auto opacity-30" style={{ color }} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+
+        {/* Cancel */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="card-press w-full py-4 rounded-2xl text-[16px] font-bold text-white/60"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
