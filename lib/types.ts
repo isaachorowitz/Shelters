@@ -99,19 +99,27 @@ export interface DirectoryResponse {
 }
 
 /** Source labels for the data attribution section */
-export const DATA_SOURCES: {
+export interface DataSource {
   key: string
   name: string
   nameHe: string
   description: string
   type: "government" | "ngo" | "community" | "opensource"
-}[] = [
+  url?: string
+  count?: number
+  lastUpdated?: string
+}
+
+export const DATA_SOURCES: DataSource[] = [
   {
     key: "jerusalem_ckan_2025",
     name: "Jerusalem Municipality",
     nameHe: "עיריית ירושלים",
-    description: "Open data portal (jerusalem.datacity.org.il), June 2025 update",
+    description: "Open data portal, June 2025 update",
     type: "government",
+    url: "https://jerusalem.datacity.org.il",
+    count: 412,
+    lastUpdated: "2025-06",
   },
   {
     key: "jerusalem_datacity_2025",
@@ -119,6 +127,9 @@ export const DATA_SOURCES: {
     nameHe: "עיריית ירושלים",
     description: "DataCity open data platform",
     type: "government",
+    url: "https://jerusalem.datacity.org.il",
+    count: 186,
+    lastUpdated: "2025-06",
   },
   {
     key: "jerusalem_github_2024",
@@ -126,6 +137,9 @@ export const DATA_SOURCES: {
     nameHe: "מקלטי ירושלים",
     description: "Aggregated from ODbL-licensed municipal sources by Daniel Rosehill",
     type: "opensource",
+    url: "https://github.com/danielrosehill/Jerusalem-Public-Shelters",
+    count: 98,
+    lastUpdated: "2024-10",
   },
   {
     key: "beer_sheva_govil",
@@ -133,47 +147,67 @@ export const DATA_SOURCES: {
     nameHe: "עיריית באר שבע",
     description: "Official dataset on Israel's national open data portal (data.gov.il)",
     type: "government",
+    url: "https://data.gov.il",
+    count: 156,
+    lastUpdated: "2024-12",
   },
   {
     key: "haifa_datacity",
     name: "Haifa Municipality",
     nameHe: "עיריית חיפה",
-    description: "Open data portal (haifa.datacity.org.il) - 273 protection locations",
+    description: "Open data portal - protection locations",
     type: "government",
+    url: "https://haifa.datacity.org.il",
+    count: 273,
+    lastUpdated: "2025-01",
   },
   {
     key: "haifa_pdf",
     name: "Haifa Municipality (PDF)",
     nameHe: "עיריית חיפה",
-    description: "Official published list of 101 public shelters with accessibility info",
+    description: "Official published list of public shelters with accessibility info",
     type: "government",
+    url: "https://haifa.muni.il",
+    count: 101,
+    lastUpdated: "2024-08",
   },
   {
     key: "miklat_finder_d4g",
     name: "Data for Good Israel",
     nameHe: "דאטה לטובה",
-    description: "Nationwide shelter map by Arthur Krigel & Jeremy Atia (2,084 shelters)",
+    description: "Nationwide shelter map by Arthur Krigel & Jeremy Atia",
     type: "ngo",
+    url: "https://miklat.info",
+    count: 2084,
+    lastUpdated: "2024-11",
   },
   {
     key: "negev_bimkom",
     name: "Bimkom / Negev Research Lab",
     nameHe: "במקום / מעבדת הנגב",
-    description: "613 built shelters in the Negev, sourced from Bimkom NGO field surveys",
+    description: "Built shelters in the Negev, sourced from Bimkom NGO field surveys",
     type: "ngo",
+    url: "https://bimkom.org",
+    count: 613,
+    lastUpdated: "2024-06",
   },
   {
     key: "openstreetmap",
     name: "OpenStreetMap",
     nameHe: "אופן סטריט מאפ",
-    description: "764 bomb shelters mapped by the OSM community across Israel",
+    description: "Bomb shelters mapped by the OSM community across Israel",
     type: "community",
+    url: "https://www.openstreetmap.org",
+    count: 764,
+    lastUpdated: "2025-02",
   },
   {
     key: "tlv_mymaps",
     name: "TLV Shelters Community Map",
     nameHe: "מפת מקלטי תל אביב",
-    description: "Community-contributed map with 314 Tel Aviv shelters",
+    description: "Community-contributed map of Tel Aviv shelters",
     type: "community",
+    count: 314,
+    lastUpdated: "2024-09",
   },
 ]

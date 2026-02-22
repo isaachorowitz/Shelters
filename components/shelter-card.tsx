@@ -36,6 +36,13 @@ interface ShelterCardProps {
   isClosest?: boolean
 }
 
+function formatEta(minutes: number): { value: string; unit: string } {
+  if (minutes < 60) return { value: String(Math.round(minutes)), unit: "min" }
+  const hours = minutes / 60
+  if (hours > 99) return { value: ">99", unit: "hr" }
+  return { value: hours < 10 ? hours.toFixed(1) : String(Math.round(hours)), unit: "hr" }
+}
+
 export default function ShelterCard({
   shelter,
   rank,
@@ -77,7 +84,9 @@ export default function ShelterCard({
     shelter.distance != null
       ? shelter.distance < 1000
         ? `${Math.round(shelter.distance)}m`
-        : `${(shelter.distance / 1000).toFixed(1)}km`
+        : shelter.distance < 100_000
+          ? `${(shelter.distance / 1000).toFixed(1)}km`
+          : `${Math.round(shelter.distance / 1000).toLocaleString()}km`
       : null
 
   // Build the inline detail chips: type + capacity
@@ -210,8 +219,10 @@ export default function ShelterCard({
             )}
           </div>
           {distanceText && (
-            <div className="flex flex-col items-end flex-shrink-0">
-              <span className="text-[22px] font-black text-white leading-none">{distanceText}</span>
+            <div className="flex flex-col items-end flex-shrink-0 max-w-[90px]">
+              <span className={`font-black text-white leading-none ${distanceText.length > 6 ? "text-base" : "text-[22px]"}`}>
+                {distanceText}
+              </span>
               <span className="text-[10px] text-red-400/80 font-semibold uppercase tracking-wide mt-0.5">away</span>
             </div>
           )}
@@ -242,26 +253,29 @@ export default function ShelterCard({
             aria-label="Estimated travel times"
           >
             {[
-              { icon: PersonStanding, label: shelter.etas.walk, mode: "Walk", unit: "min", color: "#4ade80" },
-              { icon: Run, label: shelter.etas.run, mode: "Run", unit: "min", color: "#fbbf24" },
-              { icon: Bike, label: shelter.etas.cycle, mode: "Bike", unit: "min", color: "#60a5fa" },
-              { icon: Zap, label: shelter.etas.scooter, mode: "Scooter", unit: "min", color: "#c084fc" },
-            ].map((eta) => (
+              { icon: PersonStanding, minutes: shelter.etas.walk, mode: "Walk", color: "#4ade80" },
+              { icon: Run, minutes: shelter.etas.run, mode: "Run", color: "#fbbf24" },
+              { icon: Bike, minutes: shelter.etas.cycle, mode: "Bike", color: "#60a5fa" },
+              { icon: Zap, minutes: shelter.etas.scooter, mode: "Scooter", color: "#c084fc" },
+            ].map((eta) => {
+              const { value, unit } = formatEta(eta.minutes)
+              return (
               <div
                 key={eta.mode}
                 className="flex flex-col items-center py-2 rounded-lg"
                 style={{ background: "rgba(255,255,255,0.04)" }}
                 role="listitem"
-                aria-label={`${eta.mode}: ${eta.label} minutes`}
+                aria-label={`${eta.mode}: ${value} ${unit}`}
               >
                 <eta.icon className="h-4 w-4" style={{ color: eta.color }} aria-hidden="true" />
                 <div className="flex items-baseline gap-0.5 mt-1">
-                  <span className="text-[15px] font-black text-white leading-none">{eta.label}</span>
-                  <span className="text-[9px] text-white/40 font-bold">{eta.unit}</span>
+                  <span className="text-[15px] font-black text-white leading-none">{value}</span>
+                  <span className="text-[9px] text-white/40 font-bold">{unit}</span>
                 </div>
                 <span className="text-[9px] text-white/35 font-semibold uppercase tracking-wide mt-0.5">{eta.mode}</span>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

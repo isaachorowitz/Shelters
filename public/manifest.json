@@ -1,6 +1,6 @@
 {
-  "name": "SHELTER NOW - Bomb Shelter Locator",
-  "short_name": "SHELTER NOW",
+  "name": "GET SHELTER - Bomb Shelter Locator",
+  "short_name": "GET SHELTER",
   "description": "Emergency bomb shelter locator for Israel - Find the nearest shelter in seconds",
   "start_url": "/",
   "scope": "/",

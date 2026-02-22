@@ -5,11 +5,11 @@
   "framework": "nextjs",
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
+          "value": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
         },
         {
           "key": "X-Content-Type-Options",
@@ -29,6 +29,31 @@
           "value": "*"
         }
       ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), camera=(), microphone=()"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -42,4 +67,4 @@
       "maxDuration": 10
     }
   }
-} 
+}
