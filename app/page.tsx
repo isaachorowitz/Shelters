@@ -377,7 +377,7 @@ export default function HomePage() {
               aria-label="Update shelter distances for new location"
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-              UPDATE SHELTERS
+              עדכן מקלטים / UPDATE
             </Button>
           )}
 
@@ -385,7 +385,7 @@ export default function HomePage() {
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30" role="alert">
               <div className="flex items-center gap-2 bg-amber-800/95 backdrop-blur-md border border-amber-600/40 text-white rounded-full px-4 py-2 shadow-xl whitespace-nowrap">
                 <SearchX className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" aria-hidden="true" />
-                <span className="text-xs font-bold">Outside Israel — search an address</span>
+                <span className="text-xs font-bold">מחוץ לישראל — חפש כתובת / Outside Israel</span>
               </div>
             </div>
           )}
@@ -399,8 +399,8 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-4">
                 <Shield className="h-10 w-10 text-red-500" aria-hidden="true" />
               </div>
-              <p className="text-white font-black text-xl">FINDING YOUR LOCATION</p>
-              <p className="text-white/50 text-sm mt-1">Locating nearest shelters...</p>
+              <p className="text-white font-black text-xl">מחפש את המיקום / FINDING LOCATION</p>
+              <p className="text-white/50 text-sm mt-1">מאתר מקלטים קרובים / Locating shelters...</p>
             </div>
           )}
 
@@ -418,7 +418,7 @@ export default function HomePage() {
                   className="text-white hover:text-white hover:bg-red-800/50 font-bold flex-shrink-0"
                   aria-label="Retry getting location"
                 >
-                  RETRY
+                  נסה שוב / RETRY
                 </Button>
               </div>
             </div>
@@ -436,18 +436,18 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <MapPin className="h-8 w-8 text-red-500" aria-hidden="true" />
                   </div>
-                  <h2 className="text-xl font-black text-white mb-2">LOCATION NEEDED</h2>
+                  <h2 className="text-xl font-black text-white mb-2">נדרש מיקום / LOCATION NEEDED</h2>
                   <p className="text-white/70 mb-4 text-sm leading-relaxed">
-                    Allow location access to find the nearest shelters to you.
+                    אפשר גישה למיקום כדי למצוא מקלטים קרובים / Allow location to find shelters near you.
                   </p>
                   <Button
                     onClick={requestLocation}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg rounded-xl mb-4"
                     aria-label="Enable location access"
                   >
-                    ALLOW LOCATION
+                    אפשר מיקום / ALLOW LOCATION
                   </Button>
-                  <p className="text-xs text-white/50 mb-3">Or search for an address:</p>
+                  <p className="text-xs text-white/50 mb-3">או חפש כתובת / Or search an address:</p>
                   <AddressSearch onLocationSelect={(coords, label) => {
                     handleSearchSelect(coords, label)
                     setPermissionDenied(false)
@@ -457,10 +457,10 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* ── Mobile bottom sheet (hidden on md+) ────────────── */}
+          {/* ── Mobile bottom sheet (hidden on md+) — shows top 3 shelters ── */}
           <div className="md:hidden">
             <ShelterPanel
-              shelters={nearbyShelters}
+              shelters={nearbyShelters.slice(0, 3)}
               isLoading={(!searchLocation && loadingLocation) || loadingShelters}
               hasLocationError={!!locationError && !searchLocation}
               userLocation={effectiveLocation}

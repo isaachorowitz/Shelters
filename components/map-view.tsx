@@ -47,6 +47,7 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
 
 const ROUTE_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6"]
 const MIN_MOVE_DISTANCE = 10
+const MIN_UPDATE_INTERVAL_MS = 3000 // Throttle GPS updates to prevent glitchy behavior while driving
 
 function MapController({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap()
@@ -73,7 +74,9 @@ function MapController({ center, zoom }: { center: LatLngExpression; zoom: numbe
 function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (loc: Coordinates) => void }) {
   const map = useMap()
   const lastRef = useRef<Coordinates | null>(null)
+  const lastUpdateTimeRef = useRef<number>(0)
   const watchRef = useRef<number | null>(null)
+  const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!navigator.geolocation || !onLocationUpdate) return
@@ -84,17 +87,33 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (loc: Coordi
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
 
+        // Skip if user hasn't moved enough
         if (lastRef.current) {
           const dist = haversineDistance(lastRef.current, loc)
           if (dist < MIN_MOVE_DISTANCE) return
         }
 
-        lastRef.current = loc
-        try {
-          map.flyTo([loc.lat, loc.lng], map.getZoom(), { duration: 1 })
-        } catch {
-          // Map may be in transitional state
+        // Time-based throttle to prevent glitchy updates while driving
+        const now = Date.now()
+        const elapsed = now - lastUpdateTimeRef.current
+
+        if (elapsed < MIN_UPDATE_INTERVAL_MS) {
+          // Schedule a trailing update if none pending
+          if (!pendingRef.current) {
+            pendingRef.current = setTimeout(() => {
+              pendingRef.current = null
+              lastRef.current = loc
+              lastUpdateTimeRef.current = Date.now()
+              onLocationUpdate(loc)
+            }, MIN_UPDATE_INTERVAL_MS - elapsed)
+          }
+          return
         }
+
+        lastRef.current = loc
+        lastUpdateTimeRef.current = now
+        // No flyTo — position marker updates via React state,
+        // user can recenter manually to avoid map jerking while driving
         onLocationUpdate(loc)
       },
       () => {},
@@ -105,6 +124,10 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (loc: Coordi
       if (watchRef.current !== null) {
         navigator.geolocation.clearWatch(watchRef.current)
         watchRef.current = null
+      }
+      if (pendingRef.current) {
+        clearTimeout(pendingRef.current)
+        pendingRef.current = null
       }
     }
   }, [map, onLocationUpdate])
@@ -169,7 +192,7 @@ function buildPopupContent(
   }
 
   if (shelter.etas) {
-    html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:8px">Walk: ${shelter.etas.walk} min &middot; Run: ${shelter.etas.run} min</div>`
+    html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:8px">הליכה Walk: ${shelter.etas.walk} min &middot; ריצה Run: ${shelter.etas.run} min</div>`
   }
 
   if (nearbyIdx >= 0 && nearbyIdx < 5) {
@@ -177,7 +200,7 @@ function buildPopupContent(
   }
 
   const navUrl = getNavUrl(shelter, userLocation)
-  html += `<a href="${navUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;background:#DC2626;color:white;font-weight:700;padding:8px 12px;font-size:13px;border-radius:8px;text-align:center;text-decoration:none;cursor:pointer">GET DIRECTIONS / נווט</a>`
+  html += `<a href="${navUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;background:#DC2626;color:white;font-weight:700;padding:8px 12px;font-size:13px;border-radius:8px;text-align:center;text-decoration:none;cursor:pointer">נווט / NAVIGATE</a>`
 
   container.innerHTML = html
   return container
