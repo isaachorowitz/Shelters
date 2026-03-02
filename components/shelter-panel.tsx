@@ -17,12 +17,11 @@ interface ShelterPanelProps {
 }
 
 // Snap points as % of viewport height (from bottom)
-const SNAP_PEEK = 0.44   // collapsed: shows handle + first full card with Navigate button
+const SNAP_PEEK = 0.44   // collapsed: shows handle + first full card with action buttons
 const SNAP_HALF = 0.60   // half sheet: shows a couple cards
 const SNAP_FULL = 0.85   // full sheet: almost full screen
 
 function snapTo(fraction: number): number {
-  // returns actual px height
   if (typeof window === "undefined") return 200
   return Math.round(window.innerHeight * fraction)
 }
@@ -46,8 +45,8 @@ function ShelterList({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-white text-center" role="status">
         <Loader2 className="h-7 w-7 animate-spin text-red-500 mb-3" aria-hidden="true" />
-        <p className="text-sm font-bold">Finding Nearest Shelters</p>
-        <p className="text-xs text-white/40 mt-1">Scanning your area...</p>
+        <p className="text-sm font-bold">מחפש מקלטים / Finding Shelters</p>
+        <p className="text-xs text-white/40 mt-1">סורק את האזור / Scanning your area...</p>
       </div>
     )
   }
@@ -57,8 +56,8 @@ function ShelterList({
         <div className="w-12 h-12 rounded-full bg-amber-500/15 flex items-center justify-center mb-3">
           <MapPin className="h-6 w-6 text-amber-400" />
         </div>
-        <p className="text-sm font-bold">Location Needed</p>
-        <p className="text-xs text-white/40 mt-1 max-w-[180px]">Turn on location to find shelters near you</p>
+        <p className="text-sm font-bold">נדרש מיקום / Location Needed</p>
+        <p className="text-xs text-white/40 mt-1 max-w-[200px]">הפעל מיקום כדי למצוא מקלטים / Turn on location to find shelters</p>
       </div>
     )
   }
@@ -68,8 +67,8 @@ function ShelterList({
         <div className="w-12 h-12 rounded-full bg-white/6 flex items-center justify-center mb-3">
           <Shield className="h-6 w-6 text-white/25" />
         </div>
-        <p className="text-sm font-bold">No Shelters Found</p>
-        <p className="text-xs text-white/40 mt-1">Move to a populated area</p>
+        <p className="text-sm font-bold">לא נמצאו מקלטים / No Shelters Found</p>
+        <p className="text-xs text-white/40 mt-1">עבור לאזור מיושב / Move to a populated area</p>
       </div>
     )
   }
@@ -107,7 +106,7 @@ function SidebarPanel({
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-red-500 flex-shrink-0" />
           <span className="text-sm font-black text-white tracking-wide">
-            {isLoading ? "FINDING..." : `${shelters.length > 0 ? `${shelters.length} ` : ""}NEAREST SHELTERS`}
+            {isLoading ? "מחפש... / FINDING..." : `${shelters.length > 0 ? `${shelters.length} ` : ""}מקלטים קרובים / NEAREST`}
           </span>
         </div>
         {onOpenShare && (
@@ -117,7 +116,7 @@ function SidebarPanel({
             style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.2)" }}
           >
             <Share2 className="h-3 w-3" />
-            Share
+            שתף / Share
           </button>
         )}
       </div>
@@ -138,7 +137,7 @@ function SidebarPanel({
             className="no-min-h w-full text-xs text-white/35 hover:text-white hover:bg-white/6 font-semibold h-9"
           >
             <List className="h-3.5 w-3.5 mr-1.5" />
-            Browse All Shelters
+            כל המקלטים / Browse All Shelters
           </Button>
         </div>
       )}
@@ -199,7 +198,6 @@ function BottomSheet({
     const vh = window.innerHeight
     const snaps = [SNAP_PEEK, SNAP_HALF, SNAP_FULL].map((s) => s * vh)
     const cur = height
-    // find next snap above current (or wrap)
     const next = snaps.find((s) => s > cur + 10) ?? snaps[0]
     setHeight(next)
   }, [height])
@@ -259,16 +257,16 @@ function BottomSheet({
             <div className="flex flex-col min-w-0">
               <span className="text-[15px] font-black text-white leading-tight tracking-tight">
                 {isLoading
-                  ? "Finding shelters..."
+                  ? "מחפש מקלטים... / Finding..."
                   : shelters.length > 0
-                    ? `${shelters.length} Nearest Shelters`
-                    : "No Shelters Found"}
+                    ? `${shelters.length} מקלטים קרובים / Nearest`
+                    : "לא נמצאו מקלטים / No Shelters"}
               </span>
               {!isLoading && nearestDist && (
                 <span className="text-[12px] text-white/45 font-medium leading-tight mt-0.5">
-                  Nearest: <span className="text-red-400 font-bold">{nearestDist}</span>
+                  הקרוב: <span className="text-red-400 font-bold">{nearestDist}</span>
                   {shelters[0]?.etas && (
-                    <span className="text-white/30"> · {shelters[0].etas.walk} min walk</span>
+                    <span className="text-white/30"> · {shelters[0].etas.walk} min הליכה</span>
                   )}
                 </span>
               )}
@@ -284,7 +282,7 @@ function BottomSheet({
                 style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.2)" }}
               >
                 <Share2 className="h-3 w-3" />
-                Share
+                שתף
               </button>
             )}
           </div>
@@ -321,7 +319,7 @@ function BottomSheet({
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             >
               <List className="h-4 w-4" />
-              Browse All Shelters
+              כל המקלטים / Browse All
             </button>
           </div>
         )}

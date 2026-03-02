@@ -123,7 +123,7 @@ export default function AddressSearch({
         return
       }
       if (debounceRef.current) clearTimeout(debounceRef.current)
-      debounceRef.current = setTimeout(() => searchAddress(value), 250)
+      debounceRef.current = setTimeout(() => searchAddress(value), 400)
     },
     [searchAddress]
   )
@@ -151,15 +151,19 @@ export default function AddressSearch({
     inputRef.current?.focus()
   }, [])
 
-  // Close results when clicking outside
+  // Close results when clicking/touching outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowResults(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    document.addEventListener("touchstart", handleClickOutside, { passive: true })
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("touchstart", handleClickOutside)
+    }
   }, [])
 
   useEffect(() => {
@@ -169,7 +173,7 @@ export default function AddressSearch({
     }
   }, [])
 
-  const inputPlaceholder = placeholder ?? (activeLabel ? "Search new address..." : "Search address...")
+  const inputPlaceholder = placeholder ?? (activeLabel ? "חפש כתובת... / Search address..." : "חפש כתובת... / Search address...")
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -197,7 +201,7 @@ export default function AddressSearch({
           placeholder={inputPlaceholder}
           className="flex-1 bg-transparent text-white py-1.5 pr-1 outline-none placeholder:text-white/30 min-w-0"
           style={{ fontSize: 16 /* prevent iOS zoom */ }}
-          aria-label="Search for an address in Israel"
+          aria-label="חפש כתובת / Search for an address in Israel"
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="none"
@@ -215,13 +219,14 @@ export default function AddressSearch({
         )}
       </div>
 
-      {/* Dropdown — rendered in a portal-like fixed container to always be on top */}
+      {/* Dropdown — fixed positioning to avoid clipping by parent stacking contexts */}
       {showResults && results.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 right-0 rounded-2xl overflow-hidden max-h-[300px] overflow-y-auto"
+          className="absolute left-0 right-0 rounded-2xl overflow-hidden overflow-y-auto overscroll-contain"
           style={{
             top: "calc(100% + 6px)",
+            maxHeight: "min(300px, 50vh)",
             background: "#0d0d0d",
             border: "1px solid rgba(255,255,255,0.15)",
             boxShadow: "0 12px 48px rgba(0,0,0,0.95)",
@@ -234,11 +239,13 @@ export default function AddressSearch({
             <button
               key={r.place_id}
               onMouseDown={(e) => e.preventDefault()}
+              onTouchEnd={(e) => {
+                e.preventDefault()
+                handleSelect(r)
+              }}
               onClick={() => handleSelect(r)}
-              className="flex items-center gap-3 w-full px-4 py-3 text-left transition-colors border-b border-white/5 last:border-0"
+              className="flex items-center gap-3 w-full px-4 py-3 text-left transition-colors border-b border-white/5 last:border-0 hover:bg-white/6 active:bg-white/10"
               style={{ background: "transparent" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               role="option"
             >
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(239,68,68,0.15)" }}>
@@ -275,23 +282,19 @@ export default function AddressSearch({
           {hasUserLocation && onClearActive && (
             <button
               onClick={onClearActive}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white flex-shrink-0 transition-colors"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white flex-shrink-0 transition-colors hover:bg-white/25 active:bg-white/30"
               style={{ background: "rgba(255,255,255,0.15)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.25)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
-              aria-label="Return to my location"
+              aria-label="המיקום שלי / Return to my location"
             >
               <LocateFixed className="h-3 w-3" />
-              My Location
+              המיקום שלי
             </button>
           )}
           {onClearActive && (
             <button
               onClick={onClearActive}
-              className="flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0 transition-colors"
+              className="flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0 transition-colors hover:bg-white/20 active:bg-white/25"
               style={{ background: "rgba(255,255,255,0.1)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
               aria-label="Clear search"
             >
               <X className="h-3 w-3 text-white" />
