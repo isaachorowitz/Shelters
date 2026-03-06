@@ -77,50 +77,81 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (loc: Coordi
   const lastUpdateTimeRef = useRef<number>(0)
   const watchRef = useRef<number | null>(null)
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!navigator.geolocation || !onLocationUpdate) return
 
-    if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current)
+    const startWatching = () => {
+      if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current)
 
-    watchRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+      watchRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
 
-        // Skip if user hasn't moved enough
-        if (lastRef.current) {
-          const dist = haversineDistance(lastRef.current, loc)
-          if (dist < MIN_MOVE_DISTANCE) return
-        }
-
-        // Time-based throttle to prevent glitchy updates while driving
-        const now = Date.now()
-        const elapsed = now - lastUpdateTimeRef.current
-
-        if (elapsed < MIN_UPDATE_INTERVAL_MS) {
-          // Schedule a trailing update if none pending
-          if (!pendingRef.current) {
-            pendingRef.current = setTimeout(() => {
-              pendingRef.current = null
-              lastRef.current = loc
-              lastUpdateTimeRef.current = Date.now()
-              onLocationUpdate(loc)
-            }, MIN_UPDATE_INTERVAL_MS - elapsed)
+          // Skip if user hasn't moved enough
+          if (lastRef.current) {
+            const dist = haversineDistance(lastRef.current, loc)
+            if (dist < MIN_MOVE_DISTANCE) return
           }
+
+          // Time-based throttle to prevent glitchy updates while driving
+          const now = Date.now()
+          const elapsed = now - lastUpdateTimeRef.current
+
+          if (elapsed < MIN_UPDATE_INTERVAL_MS) {
+            // Schedule a trailing update if none pending
+            if (!pendingRef.current) {
+              pendingRef.current = setTimeout(() => {
+                pendingRef.current = null
+                lastRef.current = loc
+                lastUpdateTimeRef.current = Date.now()
+                onLocationUpdate(loc)
+              }, MIN_UPDATE_INTERVAL_MS - elapsed)
+            }
+            return
+          }
+
+          lastRef.current = loc
+          lastUpdateTimeRef.current = now
+          // No flyTo — position marker updates via React state,
+          // user can recenter manually to avoid map jerking while driving
+          onLocationUpdate(loc)
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
+      )
+    }
+
+    // Safari can show a second location permission dialog when watchPosition
+    // is called immediately after getCurrentPosition. Delay the watch start
+    // to let Safari's permission state settle after the initial grant.
+    // Browsers with Permissions API (Chrome, Firefox) can skip the delay
+    // by checking if geolocation is already granted.
+    let cancelled = false
+    const tryStart = async () => {
+      try {
+        const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName })
+        if (!cancelled && perm?.state === "granted") {
+          startWatching()
           return
         }
-
-        lastRef.current = loc
-        lastUpdateTimeRef.current = now
-        // No flyTo — position marker updates via React state,
-        // user can recenter manually to avoid map jerking while driving
-        onLocationUpdate(loc)
-      },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
-    )
+      } catch {
+        // Safari doesn't support Permissions API for geolocation — fall through
+      }
+      // Fallback: delay watchPosition to avoid re-triggering Safari's prompt
+      if (!cancelled) {
+        delayRef.current = setTimeout(startWatching, 1000)
+      }
+    }
+    tryStart()
 
     return () => {
+      cancelled = true
+      if (delayRef.current) {
+        clearTimeout(delayRef.current)
+        delayRef.current = null
+      }
       if (watchRef.current !== null) {
         navigator.geolocation.clearWatch(watchRef.current)
         watchRef.current = null
