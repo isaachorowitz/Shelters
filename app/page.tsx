@@ -15,7 +15,7 @@ import { calculateEtas, haversineDistance } from "@/lib/utils"
 
 const LOCATION_CHANGE_THRESHOLD = 100
 const LOCATION_DEBOUNCE_MS = 2000
-const GEOLOCATION_TIMEOUT_MS = 15000
+const GEOLOCATION_TIMEOUT_MS = 30000
 
 // Israel bounding box (generous)
 const ISRAEL_LAT_MIN = 29.4
@@ -96,11 +96,18 @@ export default function HomePage() {
   const lastFetchLocationRef = useRef<Coordinates | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const allSheltersLoadedRef = useRef(false)
+  const locationRequestActiveRef = useRef(false)
 
   // The effective location for shelter lookups: search overrides user location
   const effectiveLocation = searchLocation ?? userLocation
 
   const requestLocation = useCallback(() => {
+    // Prevent multiple simultaneous getCurrentPosition calls — Safari can
+    // show duplicate permission dialogs if the API is called while a
+    // previous request is still pending.
+    if (locationRequestActiveRef.current) return
+    locationRequestActiveRef.current = true
+
     setLoadingLocation(true)
     setLocationError(null)
     setPermissionDenied(false)
@@ -108,11 +115,13 @@ export default function HomePage() {
     if (!navigator.geolocation) {
       setLocationError("Geolocation is not supported by your browser.")
       setLoadingLocation(false)
+      locationRequestActiveRef.current = false
       return
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        locationRequestActiveRef.current = false
         const coords: Coordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setUserLocation(coords)
         setLoadingLocation(false)
@@ -125,6 +134,7 @@ export default function HomePage() {
         }
       },
       (err) => {
+        locationRequestActiveRef.current = false
         setLoadingLocation(false)
         if (err.code === 1) {
           setPermissionDenied(true)
