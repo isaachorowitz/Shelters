@@ -47,7 +47,7 @@ const TYPE_NORMALIZE: Record<string, string> = {
   "תחנת כרמלית": "carmelit_station",
   "בית ספר (מתקן קליטה)": "school",
   // From OSM sources
-  "bomb_shelter": "bomb_shelter",
+  // (bomb_shelter already covered above)
   // From Google Places  
   "parking": "underground_parking",
   // Legacy
@@ -169,10 +169,10 @@ function main() {
     console.log(`  ${type}: ${count}`)
   }
 
-  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
-  fs.writeFileSync(outputPath, JSON.stringify(shelters))
-  console.log(`\nOutput: ${outputPath}`)
-  console.log(`File size: ${(fs.statSync(outputPath).size / 1024).toFixed(0)} KB`)
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true })
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(shelters))
+  console.log(`\nOutput: ${OUTPUT_PATH}`)
+  console.log(`File size: ${(fs.statSync(OUTPUT_PATH).size / 1024).toFixed(0)} KB`)
 }
 
 main()

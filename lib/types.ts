@@ -15,6 +15,7 @@ export interface Shelter {
   city_he?: string
   capacity?: number
   sources?: string
+  confidence?: "high" | "medium" | "low"
 }
 
 export type ShelterType =
@@ -68,6 +69,7 @@ export interface DataSource {
   url: string
   lastUpdated: string
   recordCount?: number
+  type?: "government" | "ngo" | "community" | "commercial"
 }
 
 export const DATA_SOURCES: DataSource[] = [
@@ -78,6 +80,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://miklat.info",
     lastUpdated: "2026-01",
     recordCount: 2084,
+    type: "community",
   },
   {
     id: "jerusalem_ckan",
@@ -86,6 +89,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://jerusalem.datacity.org.il",
     lastUpdated: "2025-09",
     recordCount: 412,
+    type: "government",
   },
   {
     id: "jerusalem_datacity",
@@ -94,6 +98,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://jerusalem.datacity.org.il",
     lastUpdated: "2025-09",
     recordCount: 186,
+    type: "government",
   },
   {
     id: "jerusalem_github",
@@ -102,6 +107,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://github.com/danielrosehill/Jerusalem-Public-Shelters",
     lastUpdated: "2025-09",
     recordCount: 98,
+    type: "community",
   },
   {
     id: "beer_sheva_govil",
@@ -110,6 +116,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://data.gov.il/dataset/shelters-br7",
     lastUpdated: "2026-03",
     recordCount: 156,
+    type: "government",
   },
   {
     id: "haifa_datacity",
@@ -118,6 +125,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://haifa.datacity.org.il",
     lastUpdated: "2025-11",
     recordCount: 273,
+    type: "government",
   },
   {
     id: "haifa_pdf",
@@ -126,6 +134,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://haifa.muni.il",
     lastUpdated: "2025-06",
     recordCount: 101,
+    type: "government",
   },
   {
     id: "bimkom_negev",
@@ -134,6 +143,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://bimkom.org",
     lastUpdated: "2025-08",
     recordCount: 613,
+    type: "ngo",
   },
   {
     id: "osm",
@@ -142,6 +152,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://www.openstreetmap.org",
     lastUpdated: "2026-03",
     recordCount: 764,
+    type: "community",
   },
   {
     id: "tlv_community",
@@ -150,6 +161,7 @@ export const DATA_SOURCES: DataSource[] = [
     url: "https://www.google.com/maps/d/",
     lastUpdated: "2025-12",
     recordCount: 314,
+    type: "community",
   },
   {
     id: "osm_extended",
@@ -157,6 +169,7 @@ export const DATA_SOURCES: DataSource[] = [
     description: "Additional OSM shelters via Overpass API",
     url: "https://overpass-api.de",
     lastUpdated: "2026-03",
+    type: "community",
   },
   {
     id: "google_places",
@@ -164,5 +177,24 @@ export const DATA_SOURCES: DataSource[] = [
     description: "Underground parking garages from Google Places",
     url: "https://places.googleapis.com/v1/places:searchNearby",
     lastUpdated: "2026-03",
+    type: "commercial",
+  },
+  {
+    id: "arcgis_municipal",
+    name: "ArcGIS Municipal Datasets",
+    description: "Municipal shelter layers from ArcGIS open data portals across Israel",
+    url: "https://www.arcgis.com/home/group.html?id=2a6c43e3a66946958f14934b61a84c83",
+    lastUpdated: "2026-02",
+    recordCount: 1842,
+    type: "government",
+  },
+  {
+    id: "huggingface",
+    name: "HuggingFace Shelter Dataset",
+    description: "Aggregated Israeli shelter dataset on HuggingFace Hub",
+    url: "https://huggingface.co/datasets",
+    lastUpdated: "2026-01",
+    recordCount: 734,
+    type: "community",
   },
 ]

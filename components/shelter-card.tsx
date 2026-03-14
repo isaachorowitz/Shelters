@@ -14,8 +14,10 @@ import {
   Users,
   Eye,
   Share2,
+  AlertTriangle,
 } from "lucide-react"
 import { useState, useCallback, useMemo } from "react"
+import ReportProblemDialog from "@/components/report-problem-dialog"
 
 interface ShelterCardProps {
   shelter: Shelter
@@ -34,6 +36,44 @@ function formatEta(minutes: number): { value: string; unit: string } {
   return { value: hours < 10 ? hours.toFixed(1) : String(Math.round(hours)), unit: "hr" }
 }
 
+// Confidence indicator dot + label
+function ConfidenceBadge({ confidence }: { confidence?: "high" | "medium" | "low" }) {
+  if (!confidence) return null
+
+  const config = {
+    high: {
+      dotColor: "#4ade80", // green-400
+      label: "אמינות גבוהה / High confidence",
+      textColor: "rgba(74,222,128,0.7)",
+    },
+    medium: {
+      dotColor: "#facc15", // yellow-400
+      label: "אמינות בינונית / Medium",
+      textColor: "rgba(250,204,21,0.7)",
+    },
+    low: {
+      dotColor: "rgba(255,255,255,0.3)", // gray
+      label: "לא מאומת / Unverified",
+      textColor: "rgba(255,255,255,0.3)",
+    },
+  }
+
+  const { dotColor, label, textColor } = config[confidence]
+
+  return (
+    <span className="flex items-center gap-1" aria-label={label}>
+      <span
+        className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+        style={{ background: dotColor }}
+        aria-hidden="true"
+      />
+      <span className="text-[10px] font-semibold" style={{ color: textColor }}>
+        {label}
+      </span>
+    </span>
+  )
+}
+
 export default function ShelterCard({
   shelter,
   rank,
@@ -45,6 +85,7 @@ export default function ShelterCard({
 }: ShelterCardProps) {
   const [showDriveModal, setShowDriveModal] = useState(false)
   const [showNavModal, setShowNavModal] = useState(false)
+  const [showReportDialog, setShowReportDialog] = useState(false)
   const display = useMemo(() => getShelterDisplayInfo(shelter), [shelter])
 
   // Walk / Run → Google Maps walking directions (direct, no modal)
@@ -148,6 +189,12 @@ export default function ShelterCard({
             </p>
           )}
 
+          {shelter.confidence && (
+            <div className="mt-1">
+              <ConfidenceBadge confidence={shelter.confidence} />
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mt-2">
             {onShowOnMap && (
               <Button
@@ -169,6 +216,15 @@ export default function ShelterCard({
               <Navigation className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
               נווט / Directions
             </Button>
+            <Button
+              onClick={() => setShowReportDialog(true)}
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-white/30 hover:text-amber-400 hover:bg-amber-500/10 font-semibold px-2 ml-auto"
+              aria-label="דווח על בעיה / Report problem"
+            >
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+            </Button>
           </div>
         </article>
 
@@ -177,6 +233,11 @@ export default function ShelterCard({
           onOpenChange={setShowNavModal}
           primaryLine={display.primaryLine}
           onNavigate={handleNavigate}
+        />
+        <ReportProblemDialog
+          shelter={shelter}
+          open={showReportDialog}
+          onOpenChange={setShowReportDialog}
         />
       </>
     )
@@ -245,8 +306,8 @@ export default function ShelterCard({
           )}
         </div>
 
-        {/* Type chip */}
-        <div className="flex items-center gap-1.5 px-4 pb-2">
+        {/* Type chip + confidence */}
+        <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
           <span
             className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: "rgba(220,38,38,0.12)", color: "rgba(252,165,165,0.85)" }}
@@ -259,9 +320,10 @@ export default function ShelterCard({
               {capacityChip}
             </span>
           )}
+          {shelter.confidence && <ConfidenceBadge confidence={shelter.confidence} />}
         </div>
 
-        {/* Navigation action buttons — Walk / Run / Drive + Share */}
+        {/* Navigation action buttons — Walk / Run / Drive + Share + Report */}
         <div className="flex gap-1.5 px-3 pb-3">
           {/* Walk */}
           <button
@@ -325,6 +387,17 @@ export default function ShelterCard({
               <span className="text-[8px] font-semibold text-white/30 mt-0.5">שתף</span>
             </button>
           )}
+
+          {/* Report Problem */}
+          <button
+            onClick={() => setShowReportDialog(true)}
+            className="card-press w-11 flex flex-col items-center justify-center rounded-xl flex-shrink-0"
+            style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.12)" }}
+            aria-label="דווח על בעיה / Report problem"
+          >
+            <AlertTriangle className="h-4 w-4 text-amber-500/60" aria-hidden="true" />
+            <span className="text-[8px] font-semibold text-amber-500/40 mt-0.5">דווח</span>
+          </button>
         </div>
       </article>
 
@@ -333,6 +406,11 @@ export default function ShelterCard({
         onOpenChange={setShowDriveModal}
         primaryLine={display.primaryLine}
         onNavigate={openDriveNav}
+      />
+      <ReportProblemDialog
+        shelter={shelter}
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
       />
     </>
   )

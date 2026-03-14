@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s | Get Shelter",
   },
   description:
-    "Find the nearest bomb shelter in Israel in seconds. Free emergency shelter locator with GPS navigation to 2,939+ public shelters, reinforced rooms, and protected spaces. מקלט עכשיו - מצא את המקלט הקרוב אליך.",
+    "Find the nearest bomb shelter in Israel in seconds. Free emergency shelter locator with GPS navigation to 7,500+ public shelters, reinforced rooms, and protected spaces. מקלט עכשיו - מצא את המקלט הקרוב אליך.",
   keywords: [
     "bomb shelter Israel",
     "מקלט",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     "Israel shelter finder",
     "reinforced room",
     "mamad",
-    "ממ״ד",
+    "ממ\"ד",
     "home front command",
     "פיקוד העורף",
   ],
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "GET SHELTER - Find the Nearest Bomb Shelter in Israel",
     description:
-      "Free emergency shelter locator. GPS navigation to 2,939+ shelters across Israel. מקלט עכשיו.",
+      "Free emergency shelter locator. GPS navigation to 7,500+ shelters across Israel. מקלט עכשיו.",
     type: "website",
     siteName: "Get Shelter",
     locale: "en_IL",

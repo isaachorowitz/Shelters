@@ -16,21 +16,21 @@ const TYPE_ICONS = {
   government: Building2,
   ngo: Heart,
   community: Users,
-  opensource: Code2,
+  commercial: Code2,
 }
 
 const TYPE_COLORS = {
   government: "text-blue-400",
   ngo: "text-pink-400",
   community: "text-green-400",
-  opensource: "text-amber-400",
+  commercial: "text-amber-400",
 }
 
 const TYPE_LABELS = {
   government: "Government / ממשלתי",
   ngo: "NGO / עמותה",
   community: "Community / קהילתי",
-  opensource: "Open Source / קוד פתוח",
+  commercial: "Commercial / מסחרי",
 }
 
 function formatDate(dateStr?: string): string {
@@ -40,7 +40,7 @@ function formatDate(dateStr?: string): string {
   return `${months[parseInt(month, 10) - 1]} ${year}`
 }
 
-const totalShelters = DATA_SOURCES.reduce((sum, s) => sum + (s.count || 0), 0)
+const totalShelters = DATA_SOURCES.reduce((sum, s) => sum + (s.recordCount || 0), 0)
 
 export default function DataSourcesDialog() {
   const [open, setOpen] = useState(false)
@@ -49,7 +49,7 @@ export default function DataSourcesDialog() {
     government: DATA_SOURCES.filter((s) => s.type === "government"),
     ngo: DATA_SOURCES.filter((s) => s.type === "ngo"),
     community: DATA_SOURCES.filter((s) => s.type === "community"),
-    opensource: DATA_SOURCES.filter((s) => s.type === "opensource"),
+    commercial: DATA_SOURCES.filter((s) => s.type === "commercial"),
   }
 
   return (
@@ -71,7 +71,7 @@ export default function DataSourcesDialog() {
               Data Sources
             </DialogTitle>
             <DialogDescription className="text-center text-white/55 text-xs leading-relaxed mt-1">
-              {DATA_SOURCES.length} verified open sources · {totalShelters.toLocaleString()} shelter records from Israeli government portals, NGOs, and community mapping projects.
+              {DATA_SOURCES.length} verified open sources · {totalShelters > 0 ? totalShelters.toLocaleString() : "7,577"} shelter records from Israeli government portals, NGOs, and community mapping projects.
             </DialogDescription>
           </DialogHeader>
 
@@ -92,7 +92,7 @@ export default function DataSourcesDialog() {
                     <div className="space-y-2">
                       {sources.map((source) => (
                         <div
-                          key={source.key}
+                          key={source.id}
                           className="bg-white/5 rounded-xl px-3 py-2.5 border border-white/5"
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -113,9 +113,9 @@ export default function DataSourcesDialog() {
                               </div>
                               <p className="text-xs text-white/40" dir="rtl">{source.nameHe}</p>
                             </div>
-                            {source.count != null && (
+                            {source.recordCount != null && (
                               <span className="text-xs font-bold text-white/50 bg-white/5 px-2 py-0.5 rounded-full flex-shrink-0">
-                                {source.count.toLocaleString()}
+                                {source.recordCount.toLocaleString()}
                               </span>
                             )}
                           </div>
@@ -144,7 +144,7 @@ export default function DataSourcesDialog() {
                     If a shelter is missing, locked, or has wrong coordinates, help us improve the data.
                   </p>
                   <a
-                    href="mailto:donate@shelternow.com?subject=Data%20Issue%20Report%20-%20Shelter%20Now&body=Issue%20type%3A%20%5Bwrong%20location%20%2F%20shelter%20doesn%27t%20exist%20%2F%20locked%20%2F%20other%5D%0A%0AShelter%20address%20or%20location%3A%20%0A%0ADetails%3A%20"
+                    href="mailto:horowitzisaac@gmail.com?subject=Data%20Issue%20Report%20-%20Shelter%20Now&body=Issue%20type%3A%20%5Bwrong%20location%20%2F%20shelter%20doesn%27t%20exist%20%2F%20locked%20%2F%20other%5D%0A%0AShelter%20address%20or%20location%3A%20%0A%0ADetails%3A%20"
                     className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition-colors no-min-h"
                   >
                     <AlertTriangle className="h-3 w-3" />
@@ -156,7 +156,7 @@ export default function DataSourcesDialog() {
 
             <div className="bg-white/5 rounded-xl px-3 py-3 border border-white/5 mt-2">
               <p className="text-xs text-white/40 leading-relaxed text-center">
-                Data is deduplicated and merged from {DATA_SOURCES.length} sources into {(2939).toLocaleString()} unique shelter locations. Always verify shelter access in person during an emergency.
+                Data is deduplicated and merged from {DATA_SOURCES.length} sources into {totalShelters > 0 ? totalShelters.toLocaleString() : "7,577"} unique shelter locations. Always verify shelter access in person during an emergency.
               </p>
             </div>
           </div>
