@@ -1,6 +1,14 @@
 /**
  * Converts the master GeoJSON dataset into an optimized static JSON file
- * with normalized bilingual type labels and clean data.
+ * for use in the Next.js application.
+ *
+ * Input:  docs/israel_shelters_MASTER_v2.geojson
+ * Output: data/shelters.json
+ *
+ * The output format is an array of shelter objects optimized for:
+ *   - Fast loading (compact keys)
+ *   - Client-side filtering (normalized type field)
+ *   - Map rendering (lat/lng instead of GeoJSON coordinates)
  *
  * Run: npx tsx scripts/build-shelter-data.ts
  */
@@ -8,21 +16,66 @@
 import * as fs from "fs"
 import * as path from "path"
 
+const INPUT_PATH = path.join(__dirname, "..", "docs", "israel_shelters_MASTER_v2.geojson")
+const OUTPUT_PATH = path.join(__dirname, "..", "data", "shelters.json")
+
+// All known type normalizations from every source
+const TYPE_NORMALIZE: Record<string, string> = {
+  // English
+  "public shelter": "public_shelter",
+  "bomb shelter": "bomb_shelter",
+  "bomb_shelter": "bomb_shelter",
+  "underground parking": "underground_parking",
+  "underground_parking": "underground_parking",
+  "fortified_space": "fortified_space",
+  "reinforced_shelter": "reinforced_shelter",
+  "carmelit_station": "carmelit_station",
+  "kindergarten": "kindergarten",
+  "school": "school",
+  "distributed": "distributed",
+  "building": "building",
+  "bunker": "bomb_shelter",
+  "changing_rooms": "public_shelter",
+  // Hebrew
+  "מקלט ציבורי": "public_shelter",
+  "מקלט": "public_shelter",
+  "חניון תת-קרקעי": "underground_parking",
+  "מיגונית": "fortified_space",
+  "מחסה - הכי מוגן שיש": "reinforced_shelter",
+  "מחסה": "reinforced_shelter",
+  "גני ילדים": "kindergarten",
+  "תחנת כרמלית": "carmelit_station",
+  "בית ספר (מתקן קליטה)": "school",
+  // From OSM sources
+  "bomb_shelter": "bomb_shelter",
+  // From Google Places  
+  "parking": "underground_parking",
+  // Legacy
+  "School": "school",
+  "Distributed": "distributed",
+  "Meguniot": "fortified_space",
+}
+
+const VALID_TYPES = new Set([
+  "public_shelter",
+  "bomb_shelter",
+  "underground_parking",
+  "school",
+  "distributed",
+  "fortified_space",
+  "reinforced_shelter",
+  "kindergarten",
+  "carmelit_station",
+  "building",
+])
+
 interface GeoFeature {
   type: "Feature"
-  geometry: { type: "Point"; coordinates: [number, number] }
-  properties: {
-    id: number
-    name?: string
-    address?: string
-    neighborhood?: string
-    city?: string
-    type?: string
-    capacity?: string
-    is_public?: boolean
-    sources?: string
-    notes?: string
+  geometry: {
+    type: string
+    coordinates: number[]
   }
+  properties: Record<string, unknown>
 }
 
 interface GeoJSON {
@@ -30,141 +83,96 @@ interface GeoJSON {
   features: GeoFeature[]
 }
 
-// Maps raw type values → normalized key
-const TYPE_NORMALIZE: Record<string, string> = {
-  "public shelter": "public_shelter",
-  "מקלט ציבורי": "public_shelter",
-  "מקלט": "public_shelter",
-  bomb_shelter: "bomb_shelter",
-  bomb: "bomb_shelter",
-  "bomb shelter": "bomb_shelter",
-  "underground parking": "underground_parking",
-  "חניון תת-קרקעי": "underground_parking",
-  School: "school",
-  "בית ספר (מתקן קליטה)": "school",
-  Distributed: "distributed",
-  Meguniot: "fortified_space",
-  "מיגונית": "fortified_space",
-  "מחסה - הכי מוגן שיש": "reinforced_shelter",
-  "מחסה": "reinforced_shelter",
-  "גני ילדים": "kindergarten",
-  "תחנת כרמלית": "carmelit_station",
-  building: "building",
-  changing_rooms: "public_shelter",
-}
-
-// City names: English → Hebrew
-const CITY_HEBREW: Record<string, string> = {
-  Jerusalem: "ירושלים",
-  "Tel Aviv": "תל אביב",
-  Haifa: "חיפה",
-  "Beer Sheva": "באר שבע",
-  Holon: "חולון",
-  Rehovot: "רחובות",
-  Herzliya: "הרצליה",
-  "Rishon LeZion": "ראשון לציון",
-  Ashkelon: "אשקלון",
-  Ashdod: "אשדוד",
-  "Petah Tikva": "פתח תקווה",
-  "Bat Yam": "בת ים",
-  "Hod HaSharon": "הוד השרון",
-  Netanya: "נתניה",
-  "Ramat Gan": "רמת גן",
-  "Kfar Saba": "כפר סבא",
-}
-
-interface ShelterOutput {
+interface Shelter {
   id: number
   lat: number
   lng: number
+  type: string
   name?: string
   address?: string
   neighborhood?: string
   city_en?: string
   city_he?: string
-  type: string
   capacity?: number
-  sources: string
+  sources?: string
 }
 
-const geojsonPath = path.join(__dirname, "..", "docs", "israel_shelters_MASTER_v2.geojson")
-const outputPath = path.join(__dirname, "..", "data", "shelters.json")
+function normalizeType(raw: unknown): string {
+  if (!raw || typeof raw !== "string") return "public_shelter"
+  const trimmed = raw.trim()
+  const normalized = TYPE_NORMALIZE[trimmed] ?? trimmed.toLowerCase().replace(/\s+/g, "_")
+  return VALID_TYPES.has(normalized) ? normalized : "public_shelter"
+}
 
-const raw: GeoJSON = JSON.parse(fs.readFileSync(geojsonPath, "utf-8"))
+function main() {
+  console.log("Building shelter data from GeoJSON master file...")
 
-const shelters: ShelterOutput[] = []
-let skipped = 0
-
-for (const feature of raw.features) {
-  const [lng, lat] = feature.geometry.coordinates
-  const p = feature.properties
-
-  // Skip entries with invalid coordinates
-  if (!lat || !lng || lat < 29 || lat > 34 || lng < 33 || lng > 37) {
-    skipped++
-    continue
+  if (!fs.existsSync(INPUT_PATH)) {
+    console.error(`ERROR: Input file not found: ${INPUT_PATH}`)
+    console.error("Make sure docs/israel_shelters_MASTER_v2.geojson exists")
+    process.exit(1)
   }
 
-  const rawType = (p.type ?? "").trim()
-  const normalizedType = TYPE_NORMALIZE[rawType] ?? "public_shelter"
+  const raw: GeoJSON = JSON.parse(fs.readFileSync(INPUT_PATH, "utf-8"))
+  console.log(`Loaded ${raw.features.length} features from GeoJSON`)
 
-  const cityRaw = (p.city ?? "").trim()
-  // Some city fields contain Hebrew or misplaced data; clean up
-  const cityEn = CITY_HEBREW[cityRaw] ? cityRaw : undefined
-  const cityHe = cityEn ? CITY_HEBREW[cityEn] : undefined
+  const shelters: Shelter[] = []
+  let skipped = 0
 
-  const shelter: ShelterOutput = {
-    id: p.id,
-    lat: Math.round(lat * 1e6) / 1e6,
-    lng: Math.round(lng * 1e6) / 1e6,
-    type: normalizedType,
-    sources: p.sources ?? "",
+  for (const feature of raw.features) {
+    if (feature.geometry.type !== "Point") {
+      skipped++
+      continue
+    }
+
+    const [lngRaw, latRaw] = feature.geometry.coordinates
+    const lat = Math.round(latRaw * 1e6) / 1e6
+    const lng = Math.round(lngRaw * 1e6) / 1e6
+
+    // Validate coordinates are within Israel
+    if (lat < 29.4 || lat > 33.5 || lng < 34.0 || lng > 35.9 || lat === 0 || lng === 0) {
+      skipped++
+      continue
+    }
+
+    const p = feature.properties
+    const shelter: Shelter = {
+      id: shelters.length + 1,
+      lat,
+      lng,
+      type: normalizeType(p.type ?? p.shelter_type ?? p.Type),
+    }
+
+    if (p.name) shelter.name = String(p.name)
+    if (p.address) shelter.address = String(p.address)
+    if (p.neighborhood) shelter.neighborhood = String(p.neighborhood)
+    if (p.city_en) shelter.city_en = String(p.city_en)
+    if (p.city_he) shelter.city_he = String(p.city_he)
+    if (p.sources) shelter.sources = String(p.sources)
+    if (p.capacity) {
+      const cap = parseInt(String(p.capacity), 10)
+      if (cap > 0) shelter.capacity = cap
+    }
+
+    shelters.push(shelter)
   }
 
-  const name = (p.name ?? "").replace(/\u200B/g, "").trim()
-  if (name) shelter.name = name
+  console.log(`\nProcessed: ${shelters.length} valid shelters (skipped ${skipped})`)
 
-  const address = (p.address ?? "").replace(/\u200B/g, "").trim()
-  if (address) shelter.address = address
+  // Type distribution
+  const typeCounts: Record<string, number> = {}
+  for (const s of shelters) {
+    typeCounts[s.type] = (typeCounts[s.type] ?? 0) + 1
+  }
+  console.log("Type distribution:")
+  for (const [type, count] of Object.entries(typeCounts).sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${type}: ${count}`)
+  }
 
-  const neighborhood = (p.neighborhood ?? "").trim()
-  if (neighborhood) shelter.neighborhood = neighborhood
-
-  if (cityEn) shelter.city_en = cityEn
-  if (cityHe) shelter.city_he = cityHe
-
-  const cap = parseInt(p.capacity ?? "", 10)
-  if (cap > 0) shelter.capacity = cap
-
-  shelters.push(shelter)
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+  fs.writeFileSync(outputPath, JSON.stringify(shelters))
+  console.log(`\nOutput: ${outputPath}`)
+  console.log(`File size: ${(fs.statSync(outputPath).size / 1024).toFixed(0)} KB`)
 }
 
-// Sort by id for deterministic output
-shelters.sort((a, b) => a.id - b.id)
-
-fs.writeFileSync(outputPath, JSON.stringify(shelters, null, 0))
-
-console.log(`Processed ${raw.features.length} features`)
-console.log(`Output: ${shelters.length} shelters`)
-console.log(`Skipped: ${skipped} (invalid coordinates)`)
-
-// Stats
-const withName = shelters.filter((s) => s.name).length
-const withAddress = shelters.filter((s) => s.address).length
-const withCapacity = shelters.filter((s) => s.capacity).length
-const withCity = shelters.filter((s) => s.city_en).length
-console.log(`\nField coverage:`)
-console.log(`  Name: ${withName} (${Math.round((withName / shelters.length) * 100)}%)`)
-console.log(`  Address: ${withAddress} (${Math.round((withAddress / shelters.length) * 100)}%)`)
-console.log(`  Capacity: ${withCapacity} (${Math.round((withCapacity / shelters.length) * 100)}%)`)
-console.log(`  City: ${withCity} (${Math.round((withCity / shelters.length) * 100)}%)`)
-
-// Type distribution
-const typeCounts: Record<string, number> = {}
-for (const s of shelters) {
-  typeCounts[s.type] = (typeCounts[s.type] ?? 0) + 1
-}
-console.log(`\nType distribution:`)
-for (const [t, c] of Object.entries(typeCounts).sort((a, b) => b[1] - a[1])) {
-  console.log(`  ${c.toString().padStart(5)} ${t}`)
-}
+main()

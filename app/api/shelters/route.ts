@@ -1,215 +1,125 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import shelterData from "@/data/shelters.json"
+import sheltersData from "@/data/shelters.json"
+import type { Shelter } from "@/lib/types"
 
-interface ShelterRow {
-  id: number
-  name: string
-  type: string
-  lat: number
-  lng: number
-  meters: number
-  address?: string
-  neighborhood?: string
-  city_en?: string
-  city_he?: string
-  capacity?: number
-  sources?: string
-}
+// Static data fallback (used when Supabase is unavailable or query is simple)
+const staticShelters: Shelter[] = sheltersData as Shelter[]
 
-interface ShelterEntry {
-  id: number
-  lat: number
-  lng: number
-  type: string
-  name?: string
-  address?: string
-  neighborhood?: string
-  city_en?: string
-  city_he?: string
-  capacity?: number
-  sources?: string
-}
+// Cache control: revalidate every 24 hours
+export const revalidate = 86400
 
-function haversine(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371e3
-  const p1 = (lat1 * Math.PI) / 180
-  const p2 = (lat2 * Math.PI) / 180
-  const dp = ((lat2 - lat1) * Math.PI) / 180
-  const dl = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
+// Helper: filter shelters from static data
+function staticResponse(
+  latN: number | null,
+  lngN: number | null,
+  limitN: number,
+  typeFilter?: string,
+  cityFilter?: string
+): NextResponse {
+  let filtered = staticShelters
 
-// Static shelter data loaded from data/shelters.json
-// 2,939 shelters from 10 verified Israeli open data sources
-const SHELTERS: ShelterEntry[] = shelterData as ShelterEntry[]
-
-function buildName(s: ShelterEntry): string {
-  if (s.name) return s.name
-  // Generate a descriptive fallback name for shelters without one
-  if (s.address && s.city_he) return `מקלט – ${s.address}, ${s.city_he}`
-  if (s.address) return `מקלט – ${s.address}`
-  if (s.city_he) return `מקלט ציבורי – ${s.city_he}`
-  if (s.city_en) return `Public Shelter – ${s.city_en}`
-  return `מקלט #${s.id}`
-}
-
-// Pre-computed bounding box radii in degrees for spatial pre-filtering.
-// At Israel's latitude (~31°N), 1° lat ≈ 111km, 1° lng ≈ 95km.
-// For small limits we use a tight box; for larger limits we widen to ensure
-// we capture enough candidates before the expensive haversine sort.
-const BOX_SIZES: [number, number, number][] = [
-  // [maxLimit, latDeg, lngDeg]
-  [10, 0.15, 0.18],   // ~17km — ample for 10 nearest in cities
-  [50, 0.35, 0.42],   // ~39km
-  [200, 0.6, 0.72],   // ~67km
-]
-
-function staticResponse(lat: number, lng: number, limit: number) {
-  // Spatial pre-filter: narrow candidates via cheap lat/lng box before haversine
-  let candidates = SHELTERS
-  const boxSize = BOX_SIZES.find(([maxLim]) => limit <= maxLim)
-  if (boxSize) {
-    const [, latDeg, lngDeg] = boxSize
-    const filtered = SHELTERS.filter(
-      (s) => Math.abs(s.lat - lat) <= latDeg && Math.abs(s.lng - lng) <= lngDeg
-    )
-    // Only use the filter if it returned enough candidates
-    if (filtered.length >= limit) candidates = filtered
+  // Type filter
+  if (typeFilter && typeFilter !== "all") {
+    filtered = filtered.filter((s) => s.type === typeFilter)
   }
 
-  const shelters: ShelterRow[] = candidates.map((s) => ({
-    id: s.id,
-    name: buildName(s),
-    type: s.type,
-    lat: s.lat,
-    lng: s.lng,
-    meters: haversine(lat, lng, s.lat, s.lng),
-    address: s.address,
-    neighborhood: s.neighborhood,
-    city_en: s.city_en,
-    city_he: s.city_he,
-    capacity: s.capacity,
-    sources: s.sources,
-  }))
-  shelters.sort((a, b) => a.meters - b.meters)
-
-  const response = NextResponse.json({ shelters: shelters.slice(0, limit) })
-  response.headers.set("Cache-Control", "public, max-age=300, s-maxage=600, stale-while-revalidate=3600")
-  return response
-}
-
-export async function GET(request: NextRequest) {
-  const params = request.nextUrl.searchParams
-  const lat = params.get("lat")
-  const lng = params.get("lng")
-  const limitStr = params.get("limit") ?? "5"
-
-  if (!lat || !lng) {
-    return NextResponse.json(
-      { error: "Missing required parameters: lat and lng" },
-      { status: 400 }
+  // City filter
+  if (cityFilter) {
+    const city = cityFilter.toLowerCase()
+    filtered = filtered.filter(
+      (s) =>
+        s.city_en?.toLowerCase().includes(city) ||
+        s.city_he?.includes(cityFilter)
     )
   }
 
-  const latN = parseFloat(lat)
-  const lngN = parseFloat(lng)
-  const limitN = parseInt(limitStr, 10)
-
-  if (isNaN(latN) || isNaN(lngN) || isNaN(limitN)) {
-    return NextResponse.json({ error: "Invalid parameter values" }, { status: 400 })
-  }
-  if (latN < -90 || latN > 90 || lngN < -180 || lngN > 180) {
-    return NextResponse.json({ error: "Invalid coordinates" }, { status: 400 })
-  }
-  if (limitN < 1 || limitN > 500) {
-    return NextResponse.json(
-      { error: "Limit must be between 1 and 500" },
-      { status: 400 }
-    )
+  // Proximity sort
+  if (latN !== null && lngN !== null) {
+    filtered = filtered
+      .map((s) => ({
+        ...s,
+        _dist: Math.pow(s.lat - latN, 2) + Math.pow(s.lng - lngN, 2),
+      }))
+      .sort((a, b) => a._dist - b._dist)
+      .slice(0, limitN)
+      .map(({ _dist, ...s }) => s as Shelter)
+  } else {
+    filtered = filtered.slice(0, limitN)
   }
 
-  // If Supabase is configured, try it first (allows live updates)
-  if (supabase) {
-    try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
-        "get_nearest_shelters",
-        { user_lng: lngN, user_lat: latN, result_limit: limitN }
-      )
+  return NextResponse.json(filtered, {
+    headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600" },
+  })
+}
 
-      if (!rpcError && rpcData) {
-        const shelters: ShelterRow[] = rpcData.map((row: Record<string, unknown>) => {
-          let distance = Number(row.meters)
-          if (distance < 1) {
-            distance = haversine(latN, lngN, Number(row.lat), Number(row.lon ?? row.lng))
-          }
-          return {
-            id: row.id,
-            name: row.name,
-            type: row.type,
-            lat: Number(row.lat),
-            lng: Number(row.lon ?? row.lng),
-            meters: distance,
-            address: row.address as string | undefined,
-            neighborhood: row.neighborhood as string | undefined,
-            city_en: row.city_en as string | undefined,
-            city_he: row.city_he as string | undefined,
-            capacity: row.capacity ? Number(row.capacity) : undefined,
-            sources: row.sources as string | undefined,
-          }
+export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+
+  // Parse params
+  const lat = searchParams.get("lat")
+  const lng = searchParams.get("lng")
+  const limit = searchParams.get("limit") ?? "50"
+  const type = searchParams.get("type") ?? undefined
+  const city = searchParams.get("city") ?? undefined
+  const source = searchParams.get("source") ?? "auto"
+
+  const latN = lat ? parseFloat(lat) : null
+  const lngN = lng ? parseFloat(lng) : null
+  const limitN = Math.min(parseInt(limit, 10) || 50, 500)
+
+  // Validate coordinates if provided
+  if (latN !== null && (isNaN(latN) || latN < 29 || latN > 34)) {
+    return NextResponse.json({ error: "Invalid latitude. Must be between 29 and 34 (Israel)." }, { status: 400 })
+  }
+  if (lngN !== null && (isNaN(lngN) || lngN < 34 || lngN > 36)) {
+    return NextResponse.json({ error: "Invalid longitude. Must be between 34 and 36 (Israel)." }, { status: 400 })
+  }
+
+  // Force static data
+  if (source === "static") {
+    return staticResponse(latN, lngN, limitN, type, city)
+  }
+
+  // Try Supabase first
+  try {
+    if (!supabase) throw new Error("Supabase not configured")
+
+    // Use PostGIS nearby function if coordinates are provided
+    if (latN !== null && lngN !== null) {
+      const { data, error } = await supabase.rpc("get_nearby_shelters", {
+        user_lat: latN,
+        user_lng: lngN,
+        radius_km: 5.0,
+        max_results: limitN,
+      })
+
+      if (error) throw error
+      if (data && data.length > 0) {
+        return NextResponse.json(data, {
+          headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=60" },
         })
-        const response = NextResponse.json({ shelters })
-        response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600")
-        return response
       }
-
-      const { data: tableData, error: tableError } = await supabase
-        .from("shelters")
-        .select("*")
-
-      if (!tableError && tableData?.length) {
-        const first = tableData[0]
-        let shelters: ShelterRow[]
-
-        if ("lat" in first && "lng" in first) {
-          shelters = tableData.map((r: Record<string, unknown>) => ({
-            id: Number(r.id),
-            name: String(r.name),
-            type: String(r.type),
-            lat: Number(r.lat),
-            lng: Number(r.lng),
-            meters: haversine(latN, lngN, Number(r.lat), Number(r.lng)),
-          }))
-        } else if ("latitude" in first && "longitude" in first) {
-          shelters = tableData.map((r: Record<string, unknown>) => ({
-            id: Number(r.id),
-            name: String(r.name),
-            type: String(r.type),
-            lat: Number(r.latitude),
-            lng: Number(r.longitude),
-            meters: haversine(latN, lngN, Number(r.latitude), Number(r.longitude)),
-          }))
-        } else {
-          return staticResponse(latN, lngN, limitN)
-        }
-
-        shelters.sort((a, b) => a.meters - b.meters)
-        const response = NextResponse.json({ shelters: shelters.slice(0, limitN) })
-        response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600")
-        return response
-      }
-    } catch {
-      // Supabase failed, fall through to static data
     }
-  }
 
-  // Primary data source: static JSON file (2,939 shelters)
-  return staticResponse(latN, lngN, limitN)
+    // General query
+    let query = supabase
+      .from("shelters")
+      .select("id, lat, lng, type, name, address, neighborhood, city_en, city_he, capacity, sources")
+      .limit(limitN)
+
+    if (type && type !== "all") query = query.eq("type", type)
+    if (city) query = query.ilike("city_en", `%${city}%`)
+
+    const { data, error } = await query
+    if (error) throw error
+
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=60" },
+    })
+  } catch (err) {
+    // Supabase unavailable — fall through to static data
+    console.warn("[shelters API] Supabase error, using static data:", err)
+    return staticResponse(latN, lngN, limitN, type, city)
+  }
 }
