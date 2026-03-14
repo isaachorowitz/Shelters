@@ -4,64 +4,10 @@ export interface Coordinates {
 }
 
 export interface Shelter {
-  id: string
-  name: string
-  type: string
-  coordinates: Coordinates
-  distance?: number // in meters
-  address?: string
-  neighborhood?: string
-  cityEn?: string
-  cityHe?: string
-  capacity?: number
-  sources?: string
-  etas?: {
-    run: number // in minutes
-    walk: number // in minutes
-    cycle: number // in minutes
-    scooter: number // in minutes
-  }
-}
-
-/** Shape returned by the /api/shelters endpoint */
-export interface ShelterApiResponse {
-  id: number
-  name: string
-  type: string
-  lat: number
-  lng: number
-  meters: number
-  address?: string
-  neighborhood?: string
-  city_en?: string
-  city_he?: string
-  capacity?: number
-  sources?: string
-}
-
-/**
- * Bilingual shelter type labels.
- * Keys match the normalized type values in the data.
- */
-export const SHELTER_TYPES: Record<string, { en: string; he: string }> = {
-  public_shelter: { en: "Public Shelter", he: "מקלט ציבורי" },
-  bomb_shelter: { en: "Bomb Shelter", he: "מקלט" },
-  underground_parking: { en: "Underground Parking", he: "חניון תת-קרקעי" },
-  school: { en: "School Shelter", he: "מקלט בית ספר" },
-  distributed: { en: "Distributed Shelter", he: "מקלט מבוזר" },
-  fortified_space: { en: "Fortified Space", he: "מיגונית" },
-  reinforced_shelter: { en: "Reinforced Shelter", he: "מחסה" },
-  kindergarten: { en: "Kindergarten Shelter", he: "מקלט גני ילדים" },
-  carmelit_station: { en: "Carmelit Station", he: "תחנת כרמלית" },
-  building: { en: "Building Shelter", he: "מקלט מבנה" },
-}
-
-/** Shape returned by the /api/shelters/directory endpoint */
-export interface DirectoryShelterEntry {
   id: number
   lat: number
   lng: number
-  type: string
+  type: ShelterType
   name?: string
   address?: string
   neighborhood?: string
@@ -71,143 +17,152 @@ export interface DirectoryShelterEntry {
   sources?: string
 }
 
-export interface NeighborhoodGroup {
-  name: string
-  count: number
-  shelters: DirectoryShelterEntry[]
+export type ShelterType =
+  | "public_shelter"
+  | "bomb_shelter"
+  | "underground_parking"
+  | "school"
+  | "distributed"
+  | "fortified_space"
+  | "reinforced_shelter"
+  | "kindergarten"
+  | "carmelit_station"
+  | "building"
+
+export interface ShelterFilters {
+  type?: ShelterType | "all"
+  city?: string
+  hasName?: boolean
+  hasAddress?: boolean
+  searchQuery?: string
 }
 
-export interface CityGroup {
-  cityHe: string
-  cityEn: string
-  count: number
-  neighborhoods: NeighborhoodGroup[]
-  shelters: DirectoryShelterEntry[] // shelters in this city without a neighborhood
+export interface MapBounds {
+  north: number
+  south: number
+  east: number
+  west: number
 }
 
-export interface RegionGroup {
-  nameHe: string
-  nameEn: string
-  count: number
-  shelters: DirectoryShelterEntry[]
+export interface NearestShelterResult {
+  shelter: Shelter
+  distanceKm: number
+  walkingMinutes: number
 }
 
-export interface DirectoryResponse {
-  cities: CityGroup[]
-  unknownRegions: RegionGroup[]
-  totalCount: number
+export interface ShelterStats {
+  total: number
+  byType: Record<ShelterType, number>
+  byCity: Record<string, number>
+  withCoords: number
+  withAddress: number
+  withName: number
 }
 
-/** Source labels for the data attribution section */
+// Data source metadata
 export interface DataSource {
-  key: string
+  id: string
   name: string
-  nameHe: string
+  nameHe?: string
   description: string
-  type: "government" | "ngo" | "community" | "opensource"
-  url?: string
-  count?: number
-  lastUpdated?: string
+  url: string
+  lastUpdated: string
+  recordCount?: number
 }
 
 export const DATA_SOURCES: DataSource[] = [
   {
-    key: "jerusalem_ckan_2025",
-    name: "Jerusalem Municipality",
-    nameHe: "עיריית ירושלים",
-    description: "Open data portal, June 2025 update",
-    type: "government",
-    url: "https://jerusalem.datacity.org.il",
-    count: 412,
-    lastUpdated: "2025-06",
-  },
-  {
-    key: "jerusalem_datacity_2025",
-    name: "Jerusalem Municipality (DataCity)",
-    nameHe: "עיריית ירושלים",
-    description: "DataCity open data platform",
-    type: "government",
-    url: "https://jerusalem.datacity.org.il",
-    count: 186,
-    lastUpdated: "2025-06",
-  },
-  {
-    key: "jerusalem_github_2024",
-    name: "Jerusalem Public Shelters (GitHub)",
-    nameHe: "מקלטי ירושלים",
-    description: "Aggregated from ODbL-licensed municipal sources by Daniel Rosehill",
-    type: "opensource",
-    url: "https://github.com/danielrosehill/Jerusalem-Public-Shelters",
-    count: 98,
-    lastUpdated: "2024-10",
-  },
-  {
-    key: "beer_sheva_govil",
-    name: "Beer Sheva Municipality",
-    nameHe: "עיריית באר שבע",
-    description: "Official dataset on Israel's national open data portal (data.gov.il)",
-    type: "government",
-    url: "https://data.gov.il",
-    count: 156,
-    lastUpdated: "2024-12",
-  },
-  {
-    key: "haifa_datacity",
-    name: "Haifa Municipality",
-    nameHe: "עיריית חיפה",
-    description: "Open data portal - protection locations",
-    type: "government",
-    url: "https://haifa.datacity.org.il",
-    count: 273,
-    lastUpdated: "2025-01",
-  },
-  {
-    key: "haifa_pdf",
-    name: "Haifa Municipality (PDF)",
-    nameHe: "עיריית חיפה",
-    description: "Official published list of public shelters with accessibility info",
-    type: "government",
-    url: "https://haifa.muni.il",
-    count: 101,
-    lastUpdated: "2024-08",
-  },
-  {
-    key: "miklat_finder_d4g",
-    name: "Data for Good Israel",
-    nameHe: "דאטה לטובה",
-    description: "Nationwide shelter map by Arthur Krigel & Jeremy Atia",
-    type: "ngo",
+    id: "miklat_info",
+    name: "Data for Good Israel (miklat.info)",
+    description: "Crowdsourced national shelter database",
     url: "https://miklat.info",
-    count: 2084,
-    lastUpdated: "2024-11",
+    lastUpdated: "2026-01",
+    recordCount: 2084,
   },
   {
-    key: "negev_bimkom",
+    id: "jerusalem_ckan",
+    name: "Jerusalem Municipality (CKAN)",
+    description: "Official Jerusalem shelter data",
+    url: "https://jerusalem.datacity.org.il",
+    lastUpdated: "2025-09",
+    recordCount: 412,
+  },
+  {
+    id: "jerusalem_datacity",
+    name: "Jerusalem DataCity",
+    description: "Jerusalem open data portal",
+    url: "https://jerusalem.datacity.org.il",
+    lastUpdated: "2025-09",
+    recordCount: 186,
+  },
+  {
+    id: "jerusalem_github",
+    name: "Jerusalem Shelters (GitHub)",
+    description: "Community-curated Jerusalem shelter list",
+    url: "https://github.com/danielrosehill/Jerusalem-Public-Shelters",
+    lastUpdated: "2025-09",
+    recordCount: 98,
+  },
+  {
+    id: "beer_sheva_govil",
+    name: "Beer Sheva (data.gov.il)",
+    description: "Official Beer Sheva shelter registry",
+    url: "https://data.gov.il/dataset/shelters-br7",
+    lastUpdated: "2026-03",
+    recordCount: 156,
+  },
+  {
+    id: "haifa_datacity",
+    name: "Haifa DataCity",
+    description: "Haifa open data shelter registry",
+    url: "https://haifa.datacity.org.il",
+    lastUpdated: "2025-11",
+    recordCount: 273,
+  },
+  {
+    id: "haifa_pdf",
+    name: "Haifa Accessibility Survey",
+    description: "Haifa shelter accessibility audit",
+    url: "https://haifa.muni.il",
+    lastUpdated: "2025-06",
+    recordCount: 101,
+  },
+  {
+    id: "bimkom_negev",
     name: "Bimkom / Negev Research Lab",
-    nameHe: "במקום / מעבדת הנגב",
-    description: "Built shelters in the Negev, sourced from Bimkom NGO field surveys",
-    type: "ngo",
+    description: "Negev region shelter survey",
     url: "https://bimkom.org",
-    count: 613,
-    lastUpdated: "2024-06",
+    lastUpdated: "2025-08",
+    recordCount: 613,
   },
   {
-    key: "openstreetmap",
+    id: "osm",
     name: "OpenStreetMap",
-    nameHe: "אופן סטריט מאפ",
-    description: "Bomb shelters mapped by the OSM community across Israel",
-    type: "community",
+    description: "Community-mapped shelters (bomb_shelter, bunker, underground parking)",
     url: "https://www.openstreetmap.org",
-    count: 764,
-    lastUpdated: "2025-02",
+    lastUpdated: "2026-03",
+    recordCount: 764,
   },
   {
-    key: "tlv_mymaps",
+    id: "tlv_community",
     name: "TLV Shelters Community Map",
-    nameHe: "מפת מקלטי תל אביב",
-    description: "Community-contributed map of Tel Aviv shelters",
-    type: "community",
-    count: 314,
-    lastUpdated: "2024-09",
+    description: "Crowdsourced Tel Aviv shelter map",
+    url: "https://www.google.com/maps/d/",
+    lastUpdated: "2025-12",
+    recordCount: 314,
+  },
+  {
+    id: "osm_extended",
+    name: "OpenStreetMap Extended (fetch-osm-shelters.ts)",
+    description: "Additional OSM shelters via Overpass API",
+    url: "https://overpass-api.de",
+    lastUpdated: "2026-03",
+  },
+  {
+    id: "google_places",
+    name: "Google Places API",
+    description: "Underground parking garages from Google Places",
+    url: "https://places.googleapis.com/v1/places:searchNearby",
+    lastUpdated: "2026-03",
   },
 ]
