@@ -15,7 +15,7 @@ import { calculateEtas, haversineDistance } from "@/lib/utils"
 
 const LOCATION_CHANGE_THRESHOLD = 100
 const LOCATION_DEBOUNCE_MS = 2000
-const GEOLOCATION_TIMEOUT_MS = 30000
+const GEOLOCATION_TIMEOUT_MS = 10000
 
 // Israel bounding box (generous)
 const ISRAEL_LAT_MIN = 29.4
@@ -147,7 +147,12 @@ export default function HomePage() {
           setLocationError("Could not get your location. Turn on location services and try again.")
         }
       },
-      { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: 0 }
+      // enableHighAccuracy:false uses fast network/wifi location instead of GPS.
+      // GPS (highAccuracy) routinely hangs for 30s+ on phones indoors — the
+      // cause of the mobile "Finding shelters" freeze. City-block accuracy is
+      // plenty to rank nearby shelters; the map's watchPosition refines later.
+      // maximumAge allows a recent cached fix to return instantly.
+      { enableHighAccuracy: false, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: 60000 }
     )
   }, [])
 
@@ -238,6 +243,15 @@ export default function HomePage() {
     loadAll()
     return () => ac.abort()
   }, [])
+
+  // Load every shelter onto the map immediately — NOT gated on geolocation.
+  // This is what makes the app work even when location is slow, denied, or
+  // hangs (the mobile bug): the 7,577 shelters render right away, and
+  // geolocation only adds the "nearest" ranking on top.
+  useEffect(() => {
+    const cleanup = loadAllMapShelters()
+    return cleanup
+  }, [loadAllMapShelters])
 
   // Fetch nearby shelters when effective location changes
   useEffect(() => {
@@ -402,15 +416,14 @@ export default function HomePage() {
 
           {isInitialLoading && (
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-30"
+              className="pointer-events-none absolute top-4 left-1/2 z-30 -translate-x-1/2"
               role="status"
-              aria-label="Acquiring your location"
+              aria-label="Finding your location"
             >
-              <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-4">
-                <Shield className="h-10 w-10 text-red-500" aria-hidden="true" />
+              <div className="flex items-center gap-2.5 rounded-full bg-black/85 backdrop-blur-md border border-white/10 px-4 py-2 shadow-xl">
+                <Loader2 className="h-4 w-4 text-red-400 animate-spin" aria-hidden="true" />
+                <span className="text-sm font-semibold text-white">מאתר מיקום / Finding you…</span>
               </div>
-              <p className="text-white font-black text-xl">מחפש את המיקום / FINDING LOCATION</p>
-              <p className="text-white/50 text-sm mt-1">מאתר מקלטים קרובים / Locating shelters...</p>
             </div>
           )}
 

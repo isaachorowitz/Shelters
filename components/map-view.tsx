@@ -119,7 +119,7 @@ function LocationTracker({ onLocationUpdate }: { onLocationUpdate?: (loc: Coordi
           onLocationUpdate(loc)
         },
         () => {},
-        { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
       )
     }
 
