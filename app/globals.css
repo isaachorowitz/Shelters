@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 84% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 84% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 84% 60%;
+    --radius: 0.75rem;
+    /* Safe area insets */
+    --sat: env(safe-area-inset-top);
+    --sar: env(safe-area-inset-right);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+  }
+
+  html {
+    height: 100%;
+    /* Prevent rubber-band scrolling on iOS */
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* Use dvh on supported browsers for true mobile viewport */
+    height: 100dvh;
+  }
+
+  body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    position: fixed;
+    width: 100%;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent callout on long press */
+    -webkit-touch-callout: none;
+    /* Disable text selection on UI chrome */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Re-enable text selection for content */
+  p, h1, h2, h3, span[dir], div[dir] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Remove tap highlight on all interactive elements */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Minimum 44px touch targets for buttons */
+  button, a, [role="button"] {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* But don't force height on tiny decorative elements */
+  button.no-min-h, .no-min-h {
+    min-height: unset;
+  }
+
+  ::selection {
+    @apply bg-red-600 text-white;
+  }
+
+  :focus-visible {
+    outline: 3px solid #DC2626;
+    outline-offset: 2px;
+  }
+}
+
+/* Leaflet popup styling for dark theme */
+.leaflet-popup-content-wrapper {
+  @apply bg-black/90 backdrop-blur-xl border border-red-500/30 rounded-xl;
+}
+.leaflet-popup-content {
+  @apply text-white m-3;
+}
+.leaflet-popup-content strong {
+  @apply block mb-1 text-base font-semibold text-primary;
+}
+.leaflet-popup-tip {
+  @apply bg-black/90;
+}
+
+/* Map attribution - subtle */
+.leaflet-control-attribution {
+  font-size: 0.65rem !important;
+  background: rgba(10, 10, 10, 0.7) !important;
+  color: #999 !important;
+  padding: 2px 5px !important;
+  border-radius: 4px;
+}
+
+/* Map zoom controls — sit above the bottom sheet on mobile */
+.leaflet-control-zoom {
+  border: none !important;
+  margin-right: 12px !important;
+  /* Above the bottom sheet peek height (44% viewport) + gap */
+  margin-bottom: calc(46vh + 16px) !important;
+}
+@media (min-width: 768px) {
+  .leaflet-control-zoom {
+    margin-bottom: 20px !important;
+  }
+}
+.leaflet-control-zoom a {
+  background: rgba(0, 0, 0, 0.88) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(12px) !important;
+}
+.leaflet-control-zoom a:hover,
+.leaflet-control-zoom a:active {
+  background: rgba(50, 50, 50, 0.92) !important;
+}
+
+/* Map container */
+.leaflet-container {
+  @apply bg-black;
+  font-family: inherit !important;
+}
+
+/* Canvas-rendered shelter markers don't need z-index overrides */
+
+/* User location pulse animation */
+.user-pulse-ring {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #3B82F6;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: user-pulse 2s ease-in-out infinite;
+}
+
+@keyframes user-pulse {
+  0% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.6); opacity: 0.1; }
+  100% { transform: scale(1); opacity: 0.4; }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-black/50;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-red-600/50 rounded-full;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-red-600/70;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .user-pulse-ring {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 60%;
+  }
+  .leaflet-popup-content-wrapper {
+    border-width: 2px;
+  }
+}
+
+/* Safe area helpers */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+
+/* Bottom sheet spring transition */
+.sheet-spring {
+  transition: height 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Full-screen stack */
+.h-dvh { height: 100dvh; }
+
+/* Prevent map tiles from getting stuck during scroll */
+.leaflet-container {
+  touch-action: none;
+}
+
+/* Active state for native card feel */
+.card-press {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.card-press:active {
+  transform: scale(0.977);
+  opacity: 0.9;
+}
