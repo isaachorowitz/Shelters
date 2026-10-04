@@ -1,7 +1,24 @@
 import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { extendTailwindMerge } from "tailwind-merge"
 
 import type { Coordinates } from "./types"
+
+// Teach tailwind-merge the custom type and shadow scales from tailwind.config.ts.
+// Without this it reads `text-caption` as a color and drops it next to `text-fg/40`.
+// The custom sizes get their own group because, unlike Tailwind's text-sm etc.,
+// they set no line-height, so they must not cancel a `leading-*` class.
+const twMerge = extendTailwindMerge<"gs-font-size">({
+  extend: {
+    classGroups: {
+      "gs-font-size": [{ text: ["nano", "micro", "tiny", "caption", "label", "ui", "body", "title", "heading", "display"] }],
+      shadow: [{ shadow: ["sheet", "action-sheet", "drawer", "popover", "pin", "glow-brand"] }],
+    },
+    conflictingClassGroups: {
+      "gs-font-size": ["font-size"],
+      "font-size": ["gs-font-size"],
+    },
+  },
+})
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

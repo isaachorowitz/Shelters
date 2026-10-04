@@ -3,33 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 84% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 0 84% 60%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 84% 60%;
-    --radius: 0.75rem;
-    /* Safe area insets */
-    --sat: env(safe-area-inset-top);
-    --sar: env(safe-area-inset-right);
-    --sab: env(safe-area-inset-bottom);
-    --sal: env(safe-area-inset-left);
-  }
+  /* Design tokens live in styles/tokens.css (imported in app/layout.tsx). */
 
   html {
     height: 100%;
@@ -80,33 +54,33 @@
   }
 
   ::selection {
-    @apply bg-red-600 text-white;
+    @apply bg-brand text-fg;
   }
 
   :focus-visible {
-    outline: 3px solid #DC2626;
+    outline: 3px solid rgb(var(--gs-brand));
     outline-offset: 2px;
   }
 }
 
 /* Leaflet popup styling for dark theme */
 .leaflet-popup-content-wrapper {
-  @apply bg-black/90 backdrop-blur-xl border border-red-500/30 rounded-xl;
+  @apply bg-scrim/90 backdrop-blur-xl border border-brand-bright/30 rounded-xl;
 }
 .leaflet-popup-content {
-  @apply text-white m-3;
+  @apply text-fg m-3;
 }
 .leaflet-popup-content strong {
   @apply block mb-1 text-base font-semibold text-primary;
 }
 .leaflet-popup-tip {
-  @apply bg-black/90;
+  @apply bg-scrim/90;
 }
 
 /* Map attribution - subtle */
 .leaflet-control-attribution {
   font-size: 0.65rem !important;
-  background: rgba(10, 10, 10, 0.7) !important;
+  background: rgb(var(--gs-panel) / 0.7) !important;
   color: #999 !important;
   padding: 2px 5px !important;
   border-radius: 4px;
@@ -125,9 +99,9 @@
   }
 }
 .leaflet-control-zoom a {
-  background: rgba(0, 0, 0, 0.88) !important;
-  color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: rgb(var(--gs-scrim) / 0.88) !important;
+  color: rgb(var(--gs-fg)) !important;
+  border: 1px solid rgb(var(--gs-fg) / 0.18) !important;
   width: 44px !important;
   height: 44px !important;
   line-height: 44px !important;
@@ -139,12 +113,12 @@
 }
 .leaflet-control-zoom a:hover,
 .leaflet-control-zoom a:active {
-  background: rgba(50, 50, 50, 0.92) !important;
+  background: rgb(50 50 50 / 0.92) !important; /* zoom button hover */
 }
 
 /* Map container */
 .leaflet-container {
-  @apply bg-black;
+  @apply bg-bg;
   font-family: inherit !important;
 }
 
@@ -157,7 +131,7 @@
   left: -6px;
   width: 32px;
   height: 32px;
-  border: 2px solid #3B82F6;
+  border: 2px solid rgb(var(--gs-info-strong));
   border-radius: 50%;
   opacity: 0.4;
   animation: user-pulse 2s ease-in-out infinite;
@@ -176,13 +150,13 @@
     height: 6px;
   }
   .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-black/50;
+    @apply bg-scrim/50;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-red-600/50 rounded-full;
+    @apply bg-brand/50 rounded-full;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-red-600/70;
+    @apply bg-brand/70;
   }
   .scrollbar-none {
     scrollbar-width: none;
@@ -204,11 +178,8 @@
   }
 }
 
-/* High contrast mode */
+/* High contrast mode (the --border override lives in styles/tokens.css) */
 @media (prefers-contrast: high) {
-  :root {
-    --border: 0 0% 60%;
-  }
   .leaflet-popup-content-wrapper {
     border-width: 2px;
   }
@@ -221,7 +192,7 @@
 
 /* Bottom sheet spring transition */
 .sheet-spring {
-  transition: height 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: height var(--gs-dur-sheet) var(--gs-ease-spring);
 }
 
 /* Full-screen stack */
@@ -234,7 +205,7 @@
 
 /* Active state for native card feel */
 .card-press {
-  transition: transform 0.12s ease, opacity 0.12s ease;
+  transition: transform var(--gs-dur-fast) ease, opacity var(--gs-dur-fast) ease;
 }
 .card-press:active {
   transform: scale(0.977);

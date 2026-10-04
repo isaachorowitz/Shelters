@@ -1,0 +1,115 @@
+/*
+ * Get Shelter design tokens.
+ *
+ * Every color, size, and motion value the UI uses lives here. Components never
+ * hard-code rgba()/hex values; they reference these tokens through Tailwind
+ * (see tailwind.config.ts). Colors are stored as space-separated RGB channels
+ * so Tailwind opacity modifiers work: `text-fg/40`, `bg-brand/15`.
+ *
+ * A redesign changes values here first. Claude Design reads this file as the
+ * design system's foundation.
+ */
+
+:root {
+  /* ── Color: neutrals ─────────────────────────────────────────── */
+  --gs-bg: 0 0 0;                    /* app background, map letterbox */
+  --gs-fg: 255 255 255;              /* text and icons; use /opacity for hierarchy */
+  --gs-surface-1: 8 8 8;             /* bottom sheet */
+  --gs-surface-2: 13 13 13;          /* drawer, popovers, dropdowns */
+  --gs-surface-3: 18 18 18;          /* action sheets */
+  --gs-surface-4: 22 22 22;          /* shelter cards */
+  --gs-panel: 10 10 10;              /* dialogs and full-screen panels */
+  --gs-scrim: 0 0 0;                 /* modal backdrops; use /opacity */
+
+  /* ── Color: brand and status ─────────────────────────────────── */
+  --gs-brand: 220 38 38;             /* primary red (logo, CTAs, closest shelter) */
+  --gs-brand-bright: 239 68 68;      /* red icons on dark, hover on solid red */
+  --gs-brand-strong: 185 28 28;      /* pressed state on solid red */
+  --gs-brand-soft: 248 113 113;      /* red text on dark */
+  --gs-brand-softer: 252 165 165;    /* closest badge text */
+  --gs-brand-deep: 69 10 10;         /* dark red panels and gradients */
+  --gs-live: 74 222 128;             /* "LIVE" status */
+  --gs-live-strong: 34 197 94;
+  --gs-warn: 251 191 36;             /* report, run mode, outside-Israel */
+  --gs-warn-soft: 252 211 77;        /* icon on the outside-Israel banner */
+  --gs-warn-pale: 253 230 138;       /* selected text in the report dialog */
+  --gs-warn-muted: 245 158 11;       /* report button icon */
+  --gs-warn-strong: 217 119 6;       /* update button */
+  --gs-warn-press: 180 83 9;         /* update button hover */
+  --gs-warn-deep: 146 64 14;         /* outside-Israel banner */
+  --gs-warn-pin: 180 90 0;           /* active searched-address pill */
+  --gs-warn-pin-soft: 253 186 116;   /* pin icon on that pill */
+  --gs-warn-pin-edge: 251 146 60;    /* that pill's border */
+  --gs-info: 96 165 250;             /* drive mode, locate button */
+  --gs-info-soft: 147 197 253;       /* share button text */
+  --gs-info-strong: 59 130 246;      /* user location dot */
+  --gs-caution: 250 204 21;          /* medium data confidence */
+  --gs-danger-deep: 127 29 29;       /* location error card */
+
+  /* ── Color: travel modes ─────────────────────────────────────── */
+  --gs-walk: 74 222 128;
+  --gs-run: 251 191 36;
+  --gs-drive: 96 165 250;
+
+  /* ── Color: rank (1 = nearest) ───────────────────────────────── */
+  --gs-rank-1: 220 38 38;
+  --gs-rank-2: 249 115 22;
+  --gs-rank-3: 245 158 11;
+  --gs-rank-4: 34 197 94;
+  --gs-rank-5: 59 130 246;
+
+  /* ── Color: third-party navigation apps (brand-mandated) ─────── */
+  --gs-waze: 51 204 255;
+  --gs-google: 66 133 244;
+
+  /* ── Layout ──────────────────────────────────────────────────── */
+  --gs-topbar-h: 56px;
+  --gs-sidebar-w: 340px;
+  --gs-drawer-w: 288px;
+  --gs-content-max: 64rem;           /* static pages (max-w-5xl) */
+  --gs-touch: 44px;                  /* minimum touch target */
+
+  /* ── Radius ──────────────────────────────────────────────────── */
+  --gs-radius-sheet: 20px;           /* bottom sheet top corners */
+
+  /* ── Motion ──────────────────────────────────────────────────── */
+  --gs-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --gs-dur-fast: 0.12s;
+  --gs-dur-base: 0.2s;
+  --gs-dur-drawer: 0.22s;
+  --gs-dur-sheet: 0.38s;
+
+  /* ── shadcn/ui compatibility (consumed by components/ui/*) ───── */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 5%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 0 84% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 0 84% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 84% 60%;
+  --radius: 0.75rem;
+
+  /* ── Safe areas ──────────────────────────────────────────────── */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 60%;
+  }
+}

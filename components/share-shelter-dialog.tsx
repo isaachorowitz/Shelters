@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import type { Shelter, Coordinates, ShelterApiResponse } from "@/lib/types"
-import { calculateEtas } from "@/lib/utils"
+import { calculateEtas, cn } from "@/lib/utils"
 import { getShelterDisplayInfo } from "@/lib/shelter-display"
 
 interface ShareShelterDialogProps {
@@ -112,26 +112,27 @@ function ShelterOption({
   return (
     <button
       onClick={onSelect}
-      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
-      style={{
-        background: selected ? "rgba(220,38,38,0.15)" : "rgba(255,255,255,0.04)",
-        border: selected ? "1px solid rgba(220,38,38,0.5)" : "1px solid rgba(255,255,255,0.06)",
-      }}
+      className={cn(
+        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all border",
+        selected ? "bg-brand/15 border-brand/50" : "bg-fg/4 border-fg/6"
+      )}
     >
       <div
-        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
-        style={{ background: rank === 1 ? "#DC2626" : selected ? "rgba(220,38,38,0.4)" : "rgba(255,255,255,0.08)" }}
+        className={cn(
+          "w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0",
+          rank === 1 ? "bg-brand" : selected ? "bg-brand/40" : "bg-fg/8"
+        )}
       >
-        {rank ?? <MapPin className="h-3.5 w-3.5 text-white/60" />}
+        {rank ?? <MapPin className="h-3.5 w-3.5 text-fg/60" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-white truncate leading-tight" dir="auto">{display.primaryLine}</p>
+        <p className="text-xs font-semibold text-fg truncate leading-tight" dir="auto">{display.primaryLine}</p>
         {display.secondaryLine && (
-          <p className="text-[10px] text-white/40 truncate">{display.secondaryLine}</p>
+          <p className="text-tiny text-fg/40 truncate">{display.secondaryLine}</p>
         )}
       </div>
-      {dist && <span className="text-xs font-bold text-red-400 flex-shrink-0 ml-1">{dist}</span>}
-      {selected && <Check className="h-3.5 w-3.5 text-red-400 flex-shrink-0" aria-hidden="true" />}
+      {dist && <span className="text-xs font-bold text-brand-soft flex-shrink-0 ml-1">{dist}</span>}
+      {selected && <Check className="h-3.5 w-3.5 text-brand-soft flex-shrink-0" aria-hidden="true" />}
     </button>
   )
 }
@@ -284,19 +285,19 @@ export default function ShareShelterDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-neutral-950 border border-white/10 text-white max-w-sm mx-auto rounded-2xl p-0 overflow-hidden">
+      <DialogContent className="bg-panel border border-fg/10 text-fg max-w-sm mx-auto rounded-2xl p-0 overflow-hidden">
 
         {/* Header */}
-        <DialogHeader className="px-4 pt-4 pb-3 border-b border-white/8 shrink-0">
+        <DialogHeader className="px-4 pt-4 pb-3 border-b border-fg/8 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-              <Share2 className="h-4 w-4 text-blue-400" />
+            <div className="w-8 h-8 rounded-full bg-info-strong/15 flex items-center justify-center flex-shrink-0">
+              <Share2 className="h-4 w-4 text-info" />
             </div>
             <div>
-              <DialogTitle className="text-sm font-black text-white leading-tight">
+              <DialogTitle className="text-sm font-black text-fg leading-tight">
                 Share a Shelter
               </DialogTitle>
-              <DialogDescription className="text-[11px] text-white/45 mt-0.5">
+              <DialogDescription className="text-caption text-fg/45 mt-0.5">
                 {contextShelters.length > 0 || prefillShelter
                   ? "Pick a shelter to share with your friend"
                   : "Search your friend's address or share from your nearest shelters"}
@@ -311,16 +312,12 @@ export default function ShareShelterDialog({
           {!prefillShelter && (
             <div className="relative">
               <div
-                className="flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
+                className="flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all bg-fg/6 border border-fg/10"
               >
                 {isSearching ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-red-400 flex-shrink-0" />
+                  <Loader2 className="h-4 w-4 animate-spin text-brand-soft flex-shrink-0" />
                 ) : (
-                  <Search className="h-4 w-4 text-white/35 flex-shrink-0" />
+                  <Search className="h-4 w-4 text-fg/35 flex-shrink-0" />
                 )}
                 <input
                   ref={inputRef}
@@ -329,12 +326,12 @@ export default function ShareShelterDialog({
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true) }}
                   placeholder="Friend's address in Israel..."
-                  className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/30 min-w-0"
+                  className="flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg/30 min-w-0"
                   autoComplete="off"
                   dir="auto"
                 />
                 {query && (
-                  <button onClick={handleClearAddress} className="text-white/35 hover:text-white flex-shrink-0">
+                  <button onClick={handleClearAddress} className="text-fg/35 hover:text-fg flex-shrink-0">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 )}
@@ -343,26 +340,17 @@ export default function ShareShelterDialog({
               {/* Suggestions dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div
-                  className="absolute left-0 right-0 rounded-xl overflow-hidden mt-1"
-                  style={{
-                    background: "#0d0d0d",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.9)",
-                    zIndex: 99999,
-                  }}
+                  className="absolute inset-x-0 rounded-xl overflow-hidden mt-1 bg-surface-2 border border-fg/12 shadow-[0_8px_32px_rgba(0,0,0,0.9)] z-popover"
                 >
                   {suggestions.map((r) => (
                     <button
                       key={r.place_id}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAddressSelect(r)}
-                      className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left border-b border-white/5 last:border-0 transition-colors"
-                      style={{ background: "transparent" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left border-b border-fg/5 last:border-0 transition-colors hover:bg-fg/6"
                     >
-                      <MapPin className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
-                      <span className="text-sm text-white/85 truncate" dir="auto">{formatResult(r)}</span>
+                      <MapPin className="h-3.5 w-3.5 text-brand-soft flex-shrink-0" />
+                      <span className="text-sm text-fg/85 truncate" dir="auto">{formatResult(r)}</span>
                     </button>
                   ))}
                 </div>
@@ -372,7 +360,7 @@ export default function ShareShelterDialog({
 
           {/* Loading */}
           {loadingContext && (
-            <div className="flex items-center justify-center gap-2 py-3 text-white/45">
+            <div className="flex items-center justify-center gap-2 py-3 text-fg/45">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Finding nearby shelters...</span>
             </div>
@@ -380,7 +368,7 @@ export default function ShareShelterDialog({
 
           {/* Error */}
           {shareError && (
-            <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">
+            <div className="text-xs text-brand-soft bg-brand-bright/10 border border-brand-bright/20 px-3 py-2 rounded-xl">
               {shareError}
             </div>
           )}
@@ -388,7 +376,7 @@ export default function ShareShelterDialog({
           {/* Shelter list */}
           {sheltersToList.length > 0 && !loadingContext && (
             <div>
-              <p className="text-[10px] font-bold text-white/35 uppercase tracking-wider mb-2">
+              <p className="text-tiny font-bold text-fg/35 uppercase tracking-wider mb-2">
                 {listLabel}
               </p>
               <div className="space-y-1.5">
@@ -408,7 +396,7 @@ export default function ShareShelterDialog({
           {/* No shelters yet prompt */}
           {!loadingContext && sheltersToList.length === 0 && !prefillShelter && !friendLabel && (
             <div className="text-center py-4">
-              <p className="text-xs text-white/30">Search an address to find shelters near your friend</p>
+              <p className="text-xs text-fg/30">Search an address to find shelters near your friend</p>
             </div>
           )}
 
@@ -420,22 +408,21 @@ export default function ShareShelterDialog({
               : null
             return (
               <div
-                className="rounded-xl p-3"
-                style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)" }}
+                className="rounded-xl p-3 bg-brand/8 border border-brand/20"
               >
                 <div className="flex items-start gap-2.5">
-                  <MapPin className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                  <MapPin className="h-4 w-4 text-brand-soft mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white leading-snug" dir="auto">{d.primaryLine}</p>
-                    {d.secondaryLine && <p className="text-xs text-white/40 mt-0.5">{d.secondaryLine}</p>}
-                    <p className="text-[11px] text-red-400/70 mt-0.5">{d.typeLabel}</p>
+                    <p className="text-sm font-bold text-fg leading-snug" dir="auto">{d.primaryLine}</p>
+                    {d.secondaryLine && <p className="text-xs text-fg/40 mt-0.5">{d.secondaryLine}</p>}
+                    <p className="text-caption text-brand-soft/70 mt-0.5">{d.typeLabel}</p>
                   </div>
-                  {dist && <span className="text-sm font-black text-white flex-shrink-0">{dist}</span>}
+                  {dist && <span className="text-sm font-black text-fg flex-shrink-0">{dist}</span>}
                 </div>
                 {selectedShelter.etas && (
                   <div className="flex gap-3 mt-2 pl-6">
-                    <span className="text-[11px] text-white/35">🚶 {selectedShelter.etas.walk} min</span>
-                    <span className="text-[11px] text-white/35">🏃 {selectedShelter.etas.run} min</span>
+                    <span className="text-caption text-fg/35">🚶 {selectedShelter.etas.walk} min</span>
+                    <span className="text-caption text-fg/35">🏃 {selectedShelter.etas.run} min</span>
                   </div>
                 )}
                 {/* Quick nav links for the friend */}
@@ -444,8 +431,7 @@ export default function ShareShelterDialog({
                     href={`https://www.google.com/maps/search/?api=1&query=${selectedShelter.coordinates.lat},${selectedShelter.coordinates.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold text-white/70 hover:text-white transition-colors"
-                    style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.2)" }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-caption font-bold text-fg/70 hover:text-fg transition-colors bg-info-strong/15 border border-info-strong/20"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Navigation className="h-3 w-3" />
@@ -455,8 +441,7 @@ export default function ShareShelterDialog({
                     href={`https://waze.com/ul?ll=${selectedShelter.coordinates.lat},${selectedShelter.coordinates.lng}&navigate=yes`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold text-white/70 hover:text-white transition-colors"
-                    style={{ background: "rgba(0,180,180,0.12)", border: "1px solid rgba(0,180,180,0.2)" }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-caption font-bold text-fg/70 hover:text-fg transition-colors bg-waze/12 border border-waze/20"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Navigation className="h-3 w-3" />
@@ -469,11 +454,11 @@ export default function ShareShelterDialog({
         </div>
 
         {/* Share button */}
-        <div className="px-4 pb-4 pt-2 border-t border-white/6 shrink-0">
+        <div className="px-4 pb-4 pt-2 border-t border-fg/6 shrink-0">
           <Button
             onClick={handleShare}
             disabled={!selectedShelter}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-35 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-35 text-fg font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
           >
             {copied ? (
               <>

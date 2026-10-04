@@ -2,12 +2,22 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import dynamic from "next/dynamic"
-import Header from "@/components/header"
-import ShelterPanel from "@/components/shelter-panel"
-import AddressSearch from "@/components/address-search"
+import { AppShell } from "@/components/shell/app-shell"
+import { TopBar } from "@/components/shell/top-bar"
+import { NearbySidebar, NearbySheet } from "@/components/shelter/nearby-panel"
+import AddressSearch from "@/components/search/address-search"
 import ShelterDirectory from "@/components/shelter-directory"
 import ShareShelterDialog from "@/components/share-shelter-dialog"
-import { Loader2, MapPin, Shield, RefreshCw, SearchX, LocateFixed } from "lucide-react"
+import {
+  LocateButton,
+  LocatingPill,
+  UpdateLocationButton,
+  OutsideIsraelBanner,
+  LocationErrorCard,
+  PermissionPrompt,
+} from "@/components/map/map-overlays"
+import { Spinner } from "@/components/ui/spinner"
+import { Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import type { Shelter, ShelterApiResponse, Coordinates } from "@/lib/types"
@@ -36,11 +46,11 @@ const MapView = dynamic(
   () =>
     import("@/components/map-view").catch(() => ({
       default: () => (
-        <div className="flex flex-col items-center justify-center h-full bg-black text-white p-6" role="alert">
-          <Shield className="h-16 w-16 text-red-500 mb-4" aria-hidden="true" />
+        <div className="flex flex-col items-center justify-center h-full bg-bg text-fg p-6" role="alert">
+          <Shield className="h-16 w-16 text-brand-bright mb-4" aria-hidden="true" />
           <h2 className="text-2xl font-bold mb-2">MAP LOAD ERROR</h2>
-          <p className="text-sm mb-4 text-white/70">Unable to load map component</p>
-          <Button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-700">
+          <p className="text-sm mb-4 text-fg/70">Unable to load map component</p>
+          <Button onClick={() => window.location.reload()} className="bg-brand hover:bg-brand-strong">
             RELOAD PAGE
           </Button>
         </div>
@@ -49,9 +59,9 @@ const MapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex flex-col items-center justify-center h-full bg-black" role="status" aria-label="Loading map">
-        <Loader2 className="h-12 w-12 animate-spin text-red-500" aria-hidden="true" />
-        <p className="mt-3 text-white font-bold text-lg">LOADING MAP...</p>
+      <div className="flex flex-col items-center justify-center h-full bg-bg" role="status" aria-label="Loading map">
+        <Spinner className="h-12 w-12" />
+        <p className="mt-3 text-fg font-bold text-lg">LOADING MAP...</p>
       </div>
     ),
   }
@@ -323,192 +333,87 @@ export default function HomePage() {
     }
   }, [userLocation])
 
+  const panelProps = {
+    isLoading: (!searchLocation && loadingLocation) || loadingShelters,
+    hasLocationError: !!locationError && !searchLocation,
+    userLocation: effectiveLocation,
+    onOpenDirectory: handleOpenDirectory,
+    onOpenShare: handleOpenShare,
+  }
+
   return (
-    <div className="flex flex-col bg-black" style={{ height: "100dvh", overflow: "hidden" }}>
-      <a
-        href="#shelter-list-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-red-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold"
-      >
-        Skip to shelter list
-      </a>
-
-      {/* Top nav — 56px + safe-area-top */}
-      <Header onOpenDirectory={handleOpenDirectory}>
-        <AddressSearch
-          onLocationSelect={handleSearchSelect}
-          activeLabel={searchLabel ?? undefined}
-          onClearActive={searchLabel ? handleClearSearch : undefined}
-          hasUserLocation={!!userLocation}
-          compact
-        />
-      </Header>
-
-      {/* Body — accounts for header height including safe-area-top */}
-      <div
-        className="flex flex-1 overflow-hidden"
-        style={{ paddingTop: "calc(56px + env(safe-area-inset-top))" }}
-      >
-
-        {/* ── Sidebar (md and up only) ─────────────────────────── */}
-        <aside
-          className="hidden md:flex w-[340px] shrink-0 flex-col bg-black border-r border-white/8 overflow-hidden z-20"
-          aria-label="Nearest shelters"
-        >
-          <ShelterPanel
-            shelters={nearbyShelters}
-            isLoading={(!searchLocation && loadingLocation) || loadingShelters}
-            hasLocationError={!!locationError && !searchLocation}
-            userLocation={effectiveLocation}
-            onOpenDirectory={handleOpenDirectory}
-            onOpenShare={handleOpenShare}
-            sidebar
+    <AppShell
+      topBar={
+        <TopBar>
+          <AddressSearch
+            onLocationSelect={handleSearchSelect}
+            activeLabel={searchLabel ?? undefined}
+            onClearActive={searchLabel ? handleClearSearch : undefined}
+            hasUserLocation={!!userLocation}
           />
-        </aside>
-
-        {/* ── Map ─────────────────────────────────────────────── */}
-        <main className="flex-1 relative overflow-hidden" role="main">
-          <MapView
+        </TopBar>
+      }
+      sidebar={<NearbySidebar shelters={nearbyShelters} {...panelProps} />}
+      overlays={
+        <>
+          <ShelterDirectory
+            open={showDirectory}
+            onClose={() => setShowDirectory(false)}
+            onShowOnMap={handleShowOnMap}
+            onShare={(shelter) => handleOpenShare(shelter)}
             userLocation={effectiveLocation}
-            shelters={sheltersForMap}
-            mapHeight="100%"
-            onLocationUpdate={isTracking && !searchLocation ? handleLocationUpdate : undefined}
-            nearbyShelters={nearbyForRoutes}
-            focusedShelterId={focusedShelterId}
-            onFocusHandled={handleFocusHandled}
-            flyToLocation={flyToLocation}
           />
+          <ShareShelterDialog
+            open={showShare}
+            onOpenChange={handleShareClose}
+            shelter={shareShelter}
+            nearbyShelters={nearbyShelters}
+            userLocation={effectiveLocation}
+          />
+        </>
+      }
+    >
+      <MapView
+        userLocation={effectiveLocation}
+        shelters={sheltersForMap}
+        mapHeight="100%"
+        onLocationUpdate={isTracking && !searchLocation ? handleLocationUpdate : undefined}
+        nearbyShelters={nearbyForRoutes}
+        focusedShelterId={focusedShelterId}
+        onFocusHandled={handleFocusHandled}
+        flyToLocation={flyToLocation}
+      />
 
-          {/* My Location button */}
-          {userLocation && !locationError && (
-            <button
-              onClick={handleRecenterToUser}
-              className="absolute top-4 left-3 z-30 w-11 h-11 flex items-center justify-center rounded-full shadow-lg card-press"
-              style={{
-                background: "rgba(0,0,0,0.88)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                backdropFilter: "blur(12px)",
+      {userLocation && !locationError && <LocateButton onClick={handleRecenterToUser} />}
+
+      {locationChanged && !loadingLocation && <UpdateLocationButton onClick={handleLocationRefresh} />}
+
+      {outsideIsrael && !searchLocation && !isInitialLoading && <OutsideIsraelBanner />}
+
+      {isInitialLoading && <LocatingPill />}
+
+      {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
+        <LocationErrorCard message={locationError} onRetry={requestLocation} />
+      )}
+
+      {permissionDenied && !isInitialLoading && !searchLocation && (
+        <PermissionPrompt
+          onAllow={requestLocation}
+          search={
+            <AddressSearch
+              onLocationSelect={(coords, label) => {
+                handleSearchSelect(coords, label)
+                setPermissionDenied(false)
               }}
-              aria-label="Go to my location"
-            >
-              <LocateFixed className="h-5 w-5 text-blue-400" />
-            </button>
-          )}
-
-          {locationChanged && !loadingLocation && (
-            <Button
-              onClick={handleLocationRefresh}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full shadow-lg flex items-center gap-2 text-sm"
-              aria-label="Update shelter distances for new location"
-            >
-              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-              עדכן מקלטים / UPDATE
-            </Button>
-          )}
-
-          {outsideIsrael && !searchLocation && !isInitialLoading && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30" role="alert">
-              <div className="flex items-center gap-2 bg-amber-800/95 backdrop-blur-md border border-amber-600/40 text-white rounded-full px-4 py-2 shadow-xl whitespace-nowrap">
-                <SearchX className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" aria-hidden="true" />
-                <span className="text-xs font-bold">מחוץ לישראל — חפש כתובת / Outside Israel</span>
-              </div>
-            </div>
-          )}
-
-          {isInitialLoading && (
-            <div
-              className="pointer-events-none absolute top-4 left-1/2 z-30 -translate-x-1/2"
-              role="status"
-              aria-label="Finding your location"
-            >
-              <div className="flex items-center gap-2.5 rounded-full bg-black/85 backdrop-blur-md border border-white/10 px-4 py-2 shadow-xl">
-                <Loader2 className="h-4 w-4 text-red-400 animate-spin" aria-hidden="true" />
-                <span className="text-sm font-semibold text-white">מאתר מיקום / Finding you…</span>
-              </div>
-            </div>
-          )}
-
-          {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
-            <div
-              className="absolute top-4 left-3 right-3 max-w-md mx-auto z-30 bg-red-900/90 border border-red-700 text-white rounded-xl px-4 py-3"
-              role="alert"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{locationError}</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={requestLocation}
-                  className="text-white hover:text-white hover:bg-red-800/50 font-bold flex-shrink-0"
-                  aria-label="Retry getting location"
-                >
-                  נסה שוב / RETRY
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {permissionDenied && !isInitialLoading && !searchLocation && (
-            <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-md z-40 flex items-center justify-center p-4"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Location permission required"
-            >
-              <div className="bg-neutral-950 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-red-500/40">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MapPin className="h-8 w-8 text-red-500" aria-hidden="true" />
-                  </div>
-                  <h2 className="text-xl font-black text-white mb-2">נדרש מיקום / LOCATION NEEDED</h2>
-                  <p className="text-white/70 mb-4 text-sm leading-relaxed">
-                    אפשר גישה למיקום כדי למצוא מקלטים קרובים / Allow location to find shelters near you.
-                  </p>
-                  <Button
-                    onClick={requestLocation}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg rounded-xl mb-4"
-                    aria-label="Enable location access"
-                  >
-                    אפשר מיקום / ALLOW LOCATION
-                  </Button>
-                  <p className="text-xs text-white/50 mb-3">או חפש כתובת / Or search an address:</p>
-                  <AddressSearch onLocationSelect={(coords, label) => {
-                    handleSearchSelect(coords, label)
-                    setPermissionDenied(false)
-                  }} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Mobile bottom sheet (hidden on md+) — shows top 3 shelters ── */}
-          <div className="md:hidden">
-            <ShelterPanel
-              shelters={nearbyShelters.slice(0, 3)}
-              isLoading={(!searchLocation && loadingLocation) || loadingShelters}
-              hasLocationError={!!locationError && !searchLocation}
-              userLocation={effectiveLocation}
-              onOpenDirectory={handleOpenDirectory}
-              onOpenShare={handleOpenShare}
             />
-          </div>
-        </main>
+          }
+        />
+      )}
+
+      {/* Phone: bottom sheet with the top 3 shelters (hidden on md+) */}
+      <div className="md:hidden">
+        <NearbySheet shelters={nearbyShelters.slice(0, 3)} {...panelProps} />
       </div>
-
-      <ShelterDirectory
-        open={showDirectory}
-        onClose={() => setShowDirectory(false)}
-        onShowOnMap={handleShowOnMap}
-        onShare={(shelter) => handleOpenShare(shelter)}
-        userLocation={effectiveLocation}
-      />
-
-      <ShareShelterDialog
-        open={showShare}
-        onOpenChange={handleShareClose}
-        shelter={shareShelter}
-        nearbyShelters={nearbyShelters}
-        userLocation={effectiveLocation}
-      />
-    </div>
+    </AppShell>
   )
 }

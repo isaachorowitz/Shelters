@@ -8,6 +8,7 @@ import type { Shelter, Coordinates } from "@/lib/types"
 import { SHELTER_TYPES } from "@/lib/types"
 import { getShelterDisplayInfo } from "@/lib/shelter-display"
 import { haversineDistance } from "@/lib/utils"
+import { MAP_COLORS } from "@/lib/design/map-colors"
 
 const CARTO_TILE_URL = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(process.env.NEXT_PUBLIC_CARTO_BASEMAP_API_KEY ?? "")}`
 
@@ -23,7 +24,7 @@ const defaultIcon = L.icon({
 })
 
 const userLocationIcon = L.divIcon({
-  html: `<div style="position:relative"><div style="width:20px;height:20px;background:#3B82F6;border:4px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div><div class="user-pulse-ring"></div></div>`,
+  html: `<div style="position:relative"><div style="width:20px;height:20px;background:${MAP_COLORS.user};border:4px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div><div class="user-pulse-ring"></div></div>`,
   iconSize: [20, 20],
   iconAnchor: [10, 10],
   className: "user-location-marker",
@@ -47,7 +48,7 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
   [34.0, 36.5],
 ]
 
-const ROUTE_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6"]
+const ROUTE_COLORS = MAP_COLORS.routes
 const MIN_MOVE_DISTANCE = 10
 const MIN_UPDATE_INTERVAL_MS = 3000 // Throttle GPS updates to prevent glitchy behavior while driving
 
@@ -211,7 +212,7 @@ function buildPopupContent(
   }
 
   // Type label
-  html += `<div style="color:#ef4444;font-weight:700;font-size:11px;margin-bottom:4px" dir="auto">${escapeHtml(display.typeLabel)}`
+  html += `<div style="color:${MAP_COLORS.popupType};font-weight:700;font-size:11px;margin-bottom:4px" dir="auto">${escapeHtml(display.typeLabel)}`
   if (shelter.capacity != null && shelter.capacity > 0) {
     html += ` &middot; ${shelter.capacity} ppl`
   }
@@ -233,7 +234,7 @@ function buildPopupContent(
   }
 
   const navUrl = getNavUrl(shelter, userLocation)
-  html += `<a href="${navUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;background:#DC2626;color:white;font-weight:700;padding:8px 12px;font-size:13px;border-radius:8px;text-align:center;text-decoration:none;cursor:pointer">נווט / NAVIGATE</a>`
+  html += `<a href="${navUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;background:${MAP_COLORS.popupAction};color:white;font-weight:700;padding:8px 12px;font-size:13px;border-radius:8px;text-align:center;text-decoration:none;cursor:pointer">נווט / NAVIGATE</a>`
 
   container.innerHTML = html
   return container
@@ -310,9 +311,9 @@ function ShelterLayer({
         [shelter.coordinates.lat, shelter.coordinates.lng],
         {
           radius: 5,
-          fillColor: "#DC2626",
+          fillColor: MAP_COLORS.shelter,
           fillOpacity: 0.7,
-          color: "rgba(255,255,255,0.25)",
+          color: MAP_COLORS.shelterEdge,
           weight: 1,
           interactive: true,
         }
@@ -337,9 +338,9 @@ function ShelterLayer({
         [shelter.coordinates.lat, shelter.coordinates.lng],
         {
           radius: isNearest ? 12 : isTop3 ? 9 : 7,
-          fillColor: isNearest ? "#FF1744" : "#DC2626",
+          fillColor: isNearest ? MAP_COLORS.nearest : MAP_COLORS.shelter,
           fillOpacity: 1,
-          color: isNearest ? "#FCD34D" : isTop3 ? "#ffffff" : "#fbbf24",
+          color: isNearest ? MAP_COLORS.nearestEdge : isTop3 ? MAP_COLORS.top3Edge : MAP_COLORS.nearbyEdge,
           weight: isNearest ? 4 : 2,
           interactive: true,
         }
@@ -430,7 +431,7 @@ export default function MapView({
   return (
     <div
       style={{ height: mapHeight, width: "100%" }}
-      className="relative z-0 bg-black"
+      className="relative z-0 bg-bg"
       role="application"
       aria-label="Map showing shelter locations"
     >
@@ -484,8 +485,8 @@ export default function MapView({
               center={[userLocation.lat, userLocation.lng]}
               radius={100}
               pathOptions={{
-                color: "#3B82F6",
-                fillColor: "#3B82F6",
+                color: MAP_COLORS.user,
+                fillColor: MAP_COLORS.user,
                 fillOpacity: 0.08,
                 weight: 1,
                 opacity: 0.3,

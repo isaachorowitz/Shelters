@@ -50,23 +50,23 @@ export default function SheltersDirectoryPage() {
       {/* Hero */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <MapPin className="h-5 w-5 text-red-400" aria-hidden="true" />
-          <span className="text-sm text-red-400 font-semibold">Shelter Directory</span>
+          <MapPin className="h-5 w-5 text-brand-soft" aria-hidden="true" />
+          <span className="text-sm text-brand-soft font-semibold">Shelter Directory</span>
         </div>
         <h1 className="text-3xl font-black mb-1">Bomb Shelters in Israel</h1>
-        <p className="text-white/50 text-sm">
+        <p className="text-fg/50 text-sm">
           {totalShelters.toLocaleString()} verified shelters across {cities.length} cities
         </p>
       </div>
 
       {/* Find nearest CTA */}
-      <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-4 mb-8">
-        <p className="text-sm text-white/70 mb-2">
+      <div className="bg-brand-deep/30 border border-brand-bright/20 rounded-xl p-4 mb-8">
+        <p className="text-sm text-fg/70 mb-2">
           In an emergency, use the live shelter finder to get GPS directions to the nearest shelter instantly.
         </p>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          className="inline-flex items-center gap-2 bg-brand hover:bg-brand-strong text-fg font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
         >
           <Shield className="h-4 w-4" aria-hidden="true" />
           Find Nearest Shelter Now
@@ -74,26 +74,26 @@ export default function SheltersDirectoryPage() {
       </div>
 
       {/* City grid */}
-      <h2 className="text-lg font-bold text-white mb-4">Browse by City / לפי עיר</h2>
+      <h2 className="text-lg font-bold text-fg mb-4">Browse by City / לפי עיר</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
         {cities.map((city) => (
           <Link
             key={city.slug}
             href={`/shelters/${city.slug}`}
-            className="group bg-white/3 hover:bg-white/6 border border-white/6 hover:border-red-500/20 rounded-xl px-4 py-3 transition-all"
+            className="group bg-fg/3 hover:bg-fg/6 border border-fg/6 hover:border-brand-bright/20 rounded-xl px-4 py-3 transition-all"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-white group-hover:text-red-300 transition-colors truncate">
+                <p className="text-sm font-bold text-fg group-hover:text-brand-softer transition-colors truncate">
                   {city.cityEn}
                 </p>
                 {city.cityHe && (
-                  <p className="text-xs text-white/35 mt-0.5" dir="rtl">
+                  <p className="text-xs text-fg/35 mt-0.5" dir="rtl">
                     {city.cityHe}
                   </p>
                 )}
               </div>
-              <span className="text-xs font-bold text-white/30 bg-white/5 px-2 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-xs font-bold text-fg/30 bg-fg/5 px-2 py-0.5 rounded-full flex-shrink-0">
                 {city.count.toLocaleString()}
               </span>
             </div>
@@ -102,13 +102,13 @@ export default function SheltersDirectoryPage() {
       </div>
 
       {/* SEO text */}
-      <section className="mt-10 bg-white/3 border border-white/5 rounded-xl p-5">
-        <h2 className="text-sm font-bold text-white/40 mb-2">About This Directory</h2>
-        <p className="text-xs text-white/30 leading-relaxed">
+      <section className="mt-10 bg-fg/3 border border-fg/5 rounded-xl p-5">
+        <h2 className="text-sm font-bold text-fg/40 mb-2">About This Directory</h2>
+        <p className="text-xs text-fg/30 leading-relaxed">
           Get Shelter maintains a database of {totalShelters.toLocaleString()} verified public bomb shelters and
           protected spaces across Israel. Data is sourced from municipal open data portals, NGO surveys, and
           community mapping projects. Use the{" "}
-          <Link href="/" className="text-red-400 underline">
+          <Link href="/" className="text-brand-soft underline">
             live shelter finder
           </Link>{" "}
           for real-time GPS navigation to the nearest shelter during an emergency. Always follow Home Front

@@ -1,5 +1,6 @@
 import { Geist } from "next/font/google"
 import "leaflet/dist/leaflet.css"
+import "@/styles/tokens.css"
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
 
