@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Chip } from "@/components/ui/chip"
 import { Shield, MapPin, Navigation, Users, Phone } from "lucide-react"
 import { notFound } from "next/navigation"
 import shelterData from "@/data/shelters.json"
@@ -116,64 +118,63 @@ export default async function CityPage({
   if (!data) notFound()
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 pb-16">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 pb-20">
       {/* Hero */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <MapPin className="h-5 w-5 text-brand-soft" />
-          <span className="text-sm text-brand-soft font-semibold">
-            <Link href="/shelters" className="hover:text-brand-softer transition-colors">Shelter Directory</Link>
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin className="h-4 w-4 text-brand-bright" />
+          <span className="text-eyebrow font-semibold uppercase tracking-wider text-brand-soft">
+            <Link href="/shelters" className="hover:text-brand-bright transition-colors">Shelter Directory</Link>
             {" / "}
             {data.cityEn}
           </span>
         </div>
-        <h1 className="text-3xl font-black mb-1">Bomb Shelters in {data.cityEn}</h1>
+        <h1 className="text-display sm:text-[40px] sm:leading-[44px] font-bold tracking-tight text-fg">Bomb Shelters in {data.cityEn}</h1>
         {data.cityHe && (
-          <p className="text-xl text-fg/50 font-bold" dir="rtl">מקלטים ב{data.cityHe}</p>
+          <p className="text-heading font-semibold text-fg-muted mt-1" dir="rtl">מקלטים ב{data.cityHe}</p>
         )}
-        <p className="text-sm text-fg/40 mt-2">
+        <p className="text-body text-fg-muted mt-3">
           {data.totalCount} shelters across {data.neighborhoods.length} neighborhoods
         </p>
       </div>
 
       {/* Quick CTA */}
-      <div className="bg-brand-deep/30 border border-brand-bright/20 rounded-xl p-4 mb-8">
-        <p className="text-sm text-fg/70 mb-2">
+      <div className="rounded-2xl bg-surface-2 border border-line p-5 mb-10">
+        <p className="text-body text-fg-muted mb-4">
           Need to find the nearest shelter right now? Get Shelter uses your GPS to show the closest shelters instantly.
         </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 bg-brand hover:bg-brand-strong text-fg font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
-        >
-          <Shield className="h-4 w-4" />
-          Open Shelter Finder
-        </Link>
+        <Button asChild variant="primary" size="lg">
+          <Link href="/">
+            <Shield className="h-4 w-4" />
+            Open Shelter Finder
+          </Link>
+        </Button>
       </div>
 
       {/* Type breakdown */}
-      <section className="mb-8">
-        <h2 className="text-lg font-bold text-fg mb-3">Shelter Types in {data.cityEn}</h2>
+      <section className="mb-10">
+        <h2 className="text-heading font-semibold text-fg tracking-tight mb-4">Shelter Types in {data.cityEn}</h2>
         <div className="flex flex-wrap gap-2">
           {data.typeCounts.map((tc) => (
-            <span key={tc.type} className="text-xs font-semibold px-3 py-1.5 rounded-full bg-fg/5 border border-fg/8 text-fg/60">
-              {tc.label}: <span className="text-fg font-bold">{tc.count}</span>
-            </span>
+            <Chip key={tc.type} tone="outline" size="md">
+              {tc.label}: <span className="text-fg font-semibold">{tc.count}</span>
+            </Chip>
           ))}
         </div>
       </section>
 
       {/* Neighborhoods */}
       {data.neighborhoods.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-bold text-fg mb-4">Shelters by Neighborhood / מקלטים לפי שכונה</h2>
+        <section className="mb-10">
+          <h2 className="text-heading font-semibold text-fg tracking-tight mb-4">Shelters by Neighborhood / מקלטים לפי שכונה</h2>
           <div className="space-y-3">
             {data.neighborhoods.map((n) => (
-              <details key={n.name} className="group bg-fg/3 border border-fg/6 rounded-xl overflow-hidden">
-                <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-fg/3 transition-colors">
-                  <span className="text-sm font-bold text-fg" dir="auto">{n.name}</span>
-                  <span className="text-xs text-fg/30 bg-fg/5 px-2 py-0.5 rounded-full">{n.count} shelters</span>
+              <details key={n.name} className="group rounded-2xl bg-surface-2 border border-line overflow-hidden">
+                <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-surface-3 transition-colors">
+                  <span className="text-body font-semibold text-fg" dir="auto">{n.name}</span>
+                  <Chip tone="neutral" size="sm">{n.count} shelters</Chip>
                 </summary>
-                <div className="px-4 pb-3 space-y-1.5 border-t border-fg/5 pt-2">
+                <div className="px-4 pb-4 space-y-2 border-t border-line pt-3">
                   {n.shelters.map((s) => (
                     <ShelterRow key={s.id} shelter={s} />
                   ))}
@@ -186,9 +187,9 @@ export default async function CityPage({
 
       {/* Ungrouped shelters */}
       {data.ungrouped.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-sm font-bold text-fg/50 mb-3">Other Shelters ({data.ungrouped.length})</h2>
-          <div className="space-y-1.5">
+        <section className="mb-10">
+          <h2 className="text-body font-semibold text-fg-muted mb-3">Other Shelters ({data.ungrouped.length})</h2>
+          <div className="space-y-2">
             {data.ungrouped.map((s) => (
               <ShelterRow key={s.id} shelter={s} />
             ))}
@@ -197,20 +198,20 @@ export default async function CityPage({
       )}
 
       {/* Emergency numbers */}
-      <section className="mb-8">
-        <h2 className="text-lg font-bold text-fg mb-3 flex items-center gap-2">
-          <Phone className="h-4 w-4 text-brand-soft" />
+      <section className="mb-10">
+        <h2 className="text-heading font-semibold text-fg tracking-tight mb-4 flex items-center gap-2">
+          <Phone className="h-4 w-4 text-brand-bright" />
           Emergency Numbers
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
-            { number: "100", label: "Police", color: "text-info bg-info-strong/10 border-info-strong/15" },
-            { number: "101", label: "MDA", color: "text-brand-soft bg-brand-bright/10 border-brand-bright/15" },
-            { number: "102", label: "Fire", color: "text-orange-400 bg-orange-500/10 border-orange-500/15" },
-            { number: "104", label: "Home Front", color: "text-live bg-live-strong/10 border-live-strong/15" },
+            { number: "100", label: "Police", color: "text-info bg-info/10 border-info/20" },
+            { number: "101", label: "MDA", color: "text-brand-soft bg-brand/10 border-brand/20" },
+            { number: "102", label: "Fire", color: "text-warn bg-warn/10 border-warn/20" },
+            { number: "104", label: "Home Front", color: "text-live bg-live/10 border-live/20" },
           ].map((item) => (
-            <a key={item.number} href={`tel:${item.number}`} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold ${item.color}`}>
-              <Phone className="h-3 w-3" />
+            <a key={item.number} href={`tel:${item.number}`} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-label font-semibold ${item.color}`}>
+              <Phone className="h-3.5 w-3.5" />
               {item.number} {item.label}
             </a>
           ))}
@@ -218,29 +219,29 @@ export default async function CityPage({
       </section>
 
       {/* SEO text */}
-      <section className="bg-fg/3 border border-fg/5 rounded-xl p-5 mb-8">
-        <h2 className="text-sm font-bold text-fg/40 mb-2">About Bomb Shelters in {data.cityEn}</h2>
-        <p className="text-xs text-fg/30 leading-relaxed">
+      <section className="rounded-2xl bg-surface-2 border border-line p-5 mb-10">
+        <h2 className="text-body font-semibold text-fg mb-2">About Bomb Shelters in {data.cityEn}</h2>
+        <p className="text-label text-fg-muted leading-relaxed">
           This page lists all {data.totalCount} known public bomb shelters and protected spaces in{" "}
           {data.cityEn} ({data.cityHe}), Israel. Data is sourced from official municipal open data
           portals, NGO field surveys, and community mapping projects. Shelter locations may change
           — always verify in person during an emergency. For the most up-to-date shelter information,
           use the{" "}
-          <Link href="/" className="text-brand-soft underline">Get Shelter app</Link>{" "}
+          <Link href="/" className="text-info hover:underline underline-offset-4">Get Shelter app</Link>{" "}
           which shows your nearest shelter based on GPS location. In an emergency, follow Home
           Front Command instructions by calling 104.
         </p>
       </section>
 
       {/* Footer links */}
-      <div className="flex flex-wrap gap-4 text-xs text-fg/25">
-        <Link href="/shelters" className="hover:text-fg/50 underline">All Cities</Link>
-        <Link href="/about" className="hover:text-fg/50 underline">About</Link>
-        <Link href="/safety-guide" className="hover:text-fg/50 underline">Safety Guide</Link>
-        <Link href="/terms" className="hover:text-fg/50 underline">Terms</Link>
-        <Link href="/privacy" className="hover:text-fg/50 underline">Privacy</Link>
-        <Link href="/contact" className="hover:text-fg/50 underline">Contact</Link>
-        <Link href="/donate" className="hover:text-fg/50 underline">Donate</Link>
+      <div className="flex flex-wrap gap-x-5 gap-y-2 text-label text-fg-subtle">
+        <Link href="/shelters" className="hover:text-fg-muted underline underline-offset-4">All Cities</Link>
+        <Link href="/about" className="hover:text-fg-muted underline underline-offset-4">About</Link>
+        <Link href="/safety-guide" className="hover:text-fg-muted underline underline-offset-4">Safety Guide</Link>
+        <Link href="/terms" className="hover:text-fg-muted underline underline-offset-4">Terms</Link>
+        <Link href="/privacy" className="hover:text-fg-muted underline underline-offset-4">Privacy</Link>
+        <Link href="/contact" className="hover:text-fg-muted underline underline-offset-4">Contact</Link>
+        <Link href="/donate" className="hover:text-fg-muted underline underline-offset-4">Donate</Link>
       </div>
     </main>
   )
@@ -252,17 +253,17 @@ function ShelterRow({ shelter }: { shelter: ShelterEntry }) {
   const displayName = shelter.address || shelter.name || `Shelter #${shelter.id}`
 
   return (
-    <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-fg/2 border border-fg/4">
-      <div className="w-1.5 h-1.5 rounded-full bg-brand-bright/60 flex-shrink-0" />
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-2 border border-line">
+      <div className="w-1.5 h-1.5 rounded-full bg-brand-bright flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-fg truncate" dir="auto">{displayName}</p>
+        <p className="text-label font-semibold text-fg truncate" dir="auto">{displayName}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-tiny text-brand-soft/50">{typeLabel}</span>
+          <span className="text-caption text-brand-soft">{typeLabel}</span>
           {shelter.capacity != null && shelter.capacity > 0 && (
             <>
-              <span className="text-fg/15 text-tiny">&middot;</span>
-              <span className="text-tiny text-fg/25 flex items-center gap-0.5">
-                <Users className="h-2.5 w-2.5" />
+              <span className="text-fg-subtle text-caption">&middot;</span>
+              <span className="text-caption text-fg-subtle flex items-center gap-0.5">
+                <Users className="h-3 w-3" />
                 {shelter.capacity}
               </span>
             </>
@@ -273,9 +274,9 @@ function ShelterRow({ shelter }: { shelter: ShelterEntry }) {
         href={`https://www.google.com/maps/search/?api=1&query=${shelter.lat},${shelter.lng}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-tiny font-bold text-info-soft bg-info-strong/10 border border-info-strong/15 hover:bg-info-strong/20 transition-colors flex-shrink-0"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-semibold text-info bg-info/10 border border-info/20 hover:bg-info/15 transition-colors flex-shrink-0"
       >
-        <Navigation className="h-2.5 w-2.5" />
+        <Navigation className="h-3 w-3" />
         Navigate
       </a>
     </div>

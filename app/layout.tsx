@@ -1,4 +1,4 @@
-import { Geist } from "next/font/google"
+import { Geist, Heebo } from "next/font/google"
 import "leaflet/dist/leaflet.css"
 import "@/styles/tokens.css"
 import "./globals.css"
@@ -7,6 +7,13 @@ import type { Metadata, Viewport } from "next"
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
+})
+
+// Hebrew glyphs. Geist covers Latin; the font stack falls back to Heebo per glyph.
+const heebo = Heebo({
+  variable: "--font-heebo",
+  subsets: ["hebrew"],
   display: "swap",
 })
 
@@ -65,7 +72,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#DC2626",
+  themeColor: "#0A0A0B",
   viewportFit: "cover",
 }
 
@@ -130,7 +137,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" dir="ltr" className={geistSans.variable}>
+    <html lang="en" dir="ltr" className={`${geistSans.variable} ${heebo.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

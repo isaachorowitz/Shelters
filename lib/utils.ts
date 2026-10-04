@@ -5,13 +5,13 @@ import type { Coordinates } from "./types"
 
 // Teach tailwind-merge the custom type and shadow scales from tailwind.config.ts.
 // Without this it reads `text-caption` as a color and drops it next to `text-fg/40`.
-// The custom sizes get their own group because, unlike Tailwind's text-sm etc.,
-// they set no line-height, so they must not cancel a `leading-*` class.
+// The custom sizes get their own group so they never cancel a `leading-*`
+// class; Tailwind emits line-height utilities later, so `leading-*` wins.
 const twMerge = extendTailwindMerge<"gs-font-size">({
   extend: {
     classGroups: {
-      "gs-font-size": [{ text: ["nano", "micro", "tiny", "caption", "label", "ui", "body", "title", "heading", "display"] }],
-      shadow: [{ shadow: ["sheet", "action-sheet", "drawer", "popover", "pin", "glow-brand"] }],
+      "gs-font-size": [{ text: ["eyebrow", "caption", "label", "body", "title", "heading", "display"] }],
+      shadow: [{ shadow: ["sheet", "drawer", "popover", "glow-brand"] }],
     },
     conflictingClassGroups: {
       "gs-font-size": ["font-size"],

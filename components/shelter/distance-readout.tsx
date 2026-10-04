@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils"
+import { formatDistanceParts } from "./format"
 
-/** Large distance figure with a small "מרחק" caption, right-aligned on the card. */
-export function DistanceReadout({ text }: { text: string }) {
+/** Distance figure with a small unit, right-aligned on the card. */
+export function DistanceReadout({ meters, size = "md", className }: { meters: number; size?: "md" | "lg"; className?: string }) {
+  const { value, unit } = formatDistanceParts(meters)
   return (
-    <div className="flex flex-col items-end flex-shrink-0 max-w-[90px]">
-      <span className={cn("font-black text-fg leading-none", text.length > 6 ? "text-base" : "text-display")}>{text}</span>
-      <span className="text-tiny text-brand-soft/80 font-semibold uppercase tracking-wide mt-0.5">מרחק</span>
-    </div>
+    <span className={cn("inline-flex items-baseline gap-0.5 tabular-nums text-fg", className)}>
+      <span className={cn("font-semibold tracking-tight", size === "lg" ? "text-heading" : "text-title")}>{value}</span>
+      <span className="text-label text-fg-subtle">{unit}</span>
+    </span>
   )
 }

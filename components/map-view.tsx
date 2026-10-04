@@ -48,7 +48,6 @@ const ISRAEL_BOUNDS: LatLngBoundsExpression = [
   [34.0, 36.5],
 ]
 
-const ROUTE_COLORS = MAP_COLORS.routes
 const MIN_MOVE_DISTANCE = 10
 const MIN_UPDATE_INTERVAL_MS = 3000 // Throttle GPS updates to prevent glitchy behavior while driving
 
@@ -193,48 +192,42 @@ function buildPopupContent(
   nearbyIdx: number,
   userLocation: Coordinates | null,
 ): HTMLElement {
+  // Classes are styled in app/globals.css (.gs-popup__*).
   const container = document.createElement("div")
-  container.style.cssText = "min-width:200px;font-family:inherit"
-
   const display = getShelterDisplayInfo(shelter)
 
-  // Primary line: address or best available
-  let html = `<div style="font-size:14px;font-weight:700;margin-bottom:2px" dir="auto">${escapeHtml(display.primaryLine)}</div>`
+  let html = ""
+  if (nearbyIdx === 0) {
+    html += `<div class="gs-popup__eyebrow">הקרוב ביותר · Nearest</div>`
+  } else if (nearbyIdx > 0 && nearbyIdx < 5) {
+    html += `<div class="gs-popup__eyebrow">#${nearbyIdx + 1} · קרוב · Nearby</div>`
+  }
 
-  // Secondary line: context (neighborhood, city)
+  html += `<div class="gs-popup__title" dir="auto">${escapeHtml(display.primaryLine)}</div>`
   if (display.secondaryLine) {
-    html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:2px" dir="auto">${escapeHtml(display.secondaryLine)}</div>`
+    html += `<div class="gs-popup__meta" dir="auto">${escapeHtml(display.secondaryLine)}</div>`
   }
-
-  // Meaningful name if different from primary
   if (display.meaningfulName) {
-    html += `<div style="color:#6b7280;font-size:10px;margin-bottom:4px" dir="auto">${escapeHtml(display.meaningfulName)}</div>`
+    html += `<div class="gs-popup__meta" dir="auto">${escapeHtml(display.meaningfulName)}</div>`
   }
 
-  // Type label
-  html += `<div style="color:${MAP_COLORS.popupType};font-weight:700;font-size:11px;margin-bottom:4px" dir="auto">${escapeHtml(display.typeLabel)}`
+  html += `<div class="gs-popup__type" dir="auto">${escapeHtml(display.typeLabel)}`
   if (shelter.capacity != null && shelter.capacity > 0) {
     html += ` &middot; ${shelter.capacity} ppl`
   }
   html += `</div>`
 
+  const facts: string[] = []
   if (shelter.distance != null) {
-    const distText = shelter.distance < 1000
-      ? `${Math.round(shelter.distance)}m away`
-      : `${(shelter.distance / 1000).toFixed(1)} km away`
-    html += `<div style="color:#d1d5db;font-weight:600;margin-bottom:4px">${distText}</div>`
+    facts.push(shelter.distance < 1000 ? `${Math.round(shelter.distance)} m` : `${(shelter.distance / 1000).toFixed(1)} km`)
   }
-
   if (shelter.etas) {
-    html += `<div style="color:#9ca3af;font-size:11px;margin-bottom:8px">הליכה Walk: ${shelter.etas.walk} min &middot; ריצה Run: ${shelter.etas.run} min</div>`
+    facts.push(`הליכה Walk ${shelter.etas.walk} min`, `ריצה Run ${shelter.etas.run} min`)
   }
-
-  if (nearbyIdx >= 0 && nearbyIdx < 5) {
-    html += `<div style="background:${ROUTE_COLORS[nearbyIdx]};color:white;font-weight:700;font-size:11px;padding:4px 8px;border-radius:6px;text-align:center;margin-bottom:8px">#${nearbyIdx + 1} NEAREST</div>`
-  }
+  if (facts.length) html += `<div class="gs-popup__facts">${facts.join(" &middot; ")}</div>`
 
   const navUrl = getNavUrl(shelter, userLocation)
-  html += `<a href="${navUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:4px;width:100%;background:${MAP_COLORS.popupAction};color:white;font-weight:700;padding:8px 12px;font-size:13px;border-radius:8px;text-align:center;text-decoration:none;cursor:pointer">נווט / NAVIGATE</a>`
+  html += `<a class="gs-popup__nav" href="${navUrl}" target="_blank" rel="noopener noreferrer">נווט · Navigate</a>`
 
   container.innerHTML = html
   return container
@@ -312,9 +305,9 @@ function ShelterLayer({
         {
           radius: 5,
           fillColor: MAP_COLORS.shelter,
-          fillOpacity: 0.7,
+          fillOpacity: 0.85,
           color: MAP_COLORS.shelterEdge,
-          weight: 1,
+          weight: 1.5,
           interactive: true,
         }
       )
@@ -337,11 +330,11 @@ function ShelterLayer({
       const cm = L.circleMarker(
         [shelter.coordinates.lat, shelter.coordinates.lng],
         {
-          radius: isNearest ? 12 : isTop3 ? 9 : 7,
+          radius: isNearest ? 11 : isTop3 ? 8 : 7,
           fillColor: isNearest ? MAP_COLORS.nearest : MAP_COLORS.shelter,
           fillOpacity: 1,
-          color: isNearest ? MAP_COLORS.nearestEdge : isTop3 ? MAP_COLORS.top3Edge : MAP_COLORS.nearbyEdge,
-          weight: isNearest ? 4 : 2,
+          color: isNearest ? MAP_COLORS.nearestEdge : MAP_COLORS.nearbyEdge,
+          weight: isNearest ? 3.5 : 2,
           interactive: true,
         }
       )
@@ -471,10 +464,10 @@ export default function MapView({
                 [userLocation.lat, userLocation.lng],
                 [shelter.coordinates.lat, shelter.coordinates.lng],
               ]}
-              color={ROUTE_COLORS[i]}
-              weight={i === 0 ? 5 : i < 3 ? 3 : 2}
-              opacity={i === 0 ? 1 : i < 3 ? 0.6 : 0.4}
-              dashArray={i === 0 ? undefined : "8, 8"}
+              color={i === 0 ? MAP_COLORS.routeNearest : MAP_COLORS.routeOther}
+              weight={i === 0 ? 4 : 1.5}
+              opacity={i === 0 ? 0.95 : 0.28}
+              dashArray={i === 0 ? undefined : "4, 6"}
             />
           ))}
 

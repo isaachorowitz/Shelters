@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Navigation, Eye, AlertTriangle } from "lucide-react"
+import { Navigation, Car, Share2, Flag, PersonStanding, Zap, ChevronDown } from "lucide-react"
 import type { Shelter, Coordinates } from "@/lib/types"
+import { SHELTER_TYPES } from "@/lib/types"
 import { getShelterDisplayInfo } from "@/lib/shelter-display"
 import { cn } from "@/lib/utils"
+import { Bi } from "@/components/ui/bi"
 import { Button } from "@/components/ui/button"
 import { Chip } from "@/components/ui/chip"
 import ReportProblemDialog from "@/components/report-problem-dialog"
@@ -12,214 +14,198 @@ import { RankBadge } from "./rank-badge"
 import { DistanceReadout } from "./distance-readout"
 import { ConfidenceBadge } from "./confidence-badge"
 import { CapacityTag } from "./capacity-tag"
-import { TravelModeButton } from "./travel-mode-button"
 import { NavigationChooser } from "./navigation-chooser"
 import { openDirections, type NavApp } from "./navigation-links"
-import { formatDistance, formatEtaParts } from "./format"
+import { formatEta } from "./format"
 
 interface ShelterCardProps {
   shelter: Shelter
-  /** 1-based rank by distance; shows the colored badge. */
+  /** 1-based rank by distance. */
   rank?: number
   userLocation?: Coordinates | null
-  /**
-   * nearby:    big card with ETAs and one-tap navigation (sidebar, bottom sheet).
-   * directory: compact row for the full shelter directory.
-   */
-  variant?: "nearby" | "directory"
-  onShowOnMap?: (shelter: Shelter) => void
-  onShare?: (shelter: Shelter) => void
+  /** The nearest shelter: red flag and a stronger frame. */
   isClosest?: boolean
+  /** Shows details and actions. Collapsed cards are one-line rows. */
+  expanded?: boolean
+  /** Makes the header a toggle. Without it the card is always expanded. */
+  onToggle?: () => void
+  onShare?: (shelter: Shelter) => void
 }
 
 export function ShelterCard({
   shelter,
   rank,
   userLocation,
-  variant = "nearby",
-  onShowOnMap,
-  onShare,
   isClosest,
+  expanded = true,
+  onToggle,
+  onShare,
 }: ShelterCardProps) {
-  const [chooser, setChooser] = useState<"drive" | "directions" | null>(null)
+  const [chooserOpen, setChooserOpen] = useState(false)
   const [showReportDialog, setShowReportDialog] = useState(false)
   const display = useMemo(() => getShelterDisplayInfo(shelter), [shelter])
+  const type = SHELTER_TYPES[shelter.type]
   const hasCoords = !!shelter.coordinates
 
-  const walk = () => {
+  // Walking directions open straight away: one tap, no chooser.
+  const navigate = () => {
     if (hasCoords) openDirections("google", shelter.coordinates, userLocation, "walking")
   }
 
-  const handleChoose = (app: NavApp) => {
+  const handleDrive = (app: NavApp) => {
     if (!hasCoords) return
-    openDirections(app, shelter.coordinates, userLocation, chooser === "drive" ? "driving" : "walking")
-    setChooser(null)
+    openDirections(app, shelter.coordinates, userLocation, "driving")
+    setChooserOpen(false)
   }
 
-  const distanceText = shelter.distance != null ? formatDistance(shelter.distance) : null
-  const etaLabel = (minutes?: number) => {
-    if (minutes == null) return ""
-    const { value, unit } = formatEtaParts(minutes)
-    return `, ${value} ${unit}`
-  }
-
-  const dialogs = (
+  const header = (
     <>
-      <NavigationChooser
-        open={chooser !== null}
-        onOpenChange={(v) => !v && setChooser(null)}
-        purpose={chooser ?? "drive"}
-        title={display.primaryLine}
-        onSelect={handleChoose}
-      />
-      <ReportProblemDialog shelter={shelter} open={showReportDialog} onOpenChange={setShowReportDialog} />
+      {rank != null && <RankBadge rank={rank} className="mt-0.5" />}
+      <span className="flex-1 min-w-0 text-left">
+        {isClosest && (
+          <Chip tone="brand" size="xs" className="mb-1.5">
+            <Bi he="הקרוב ביותר" en="Nearest" />
+          </Chip>
+        )}
+        <span className="block text-title font-semibold text-fg leading-snug" dir="auto">
+          {display.primaryLine}
+        </span>
+        {display.secondaryLine && (
+          <span className="block text-label text-fg-subtle mt-0.5 truncate" dir="auto">
+            {display.secondaryLine}
+          </span>
+        )}
+      </span>
+      <span className="flex flex-col items-end flex-shrink-0 pl-2">
+        {shelter.distance != null && <DistanceReadout meters={shelter.distance} size={isClosest ? "lg" : "md"} />}
+        {shelter.etas && !expanded && (
+          <span className="inline-flex items-center gap-1 text-caption text-fg-subtle tabular-nums mt-0.5">
+            <PersonStanding className="h-3.5 w-3.5" aria-hidden="true" />
+            {formatEta(shelter.etas.walk)}
+          </span>
+        )}
+      </span>
+      {onToggle && !isClosest && (
+        <ChevronDown
+          className={cn("h-4 w-4 text-fg-subtle flex-shrink-0 self-center transition-transform", expanded && "rotate-180")}
+          aria-hidden="true"
+        />
+      )}
     </>
   )
-
-  if (variant === "directory") {
-    return (
-      <>
-        <article
-          className="bg-surface-4/60 rounded-xl border border-fg/5 overflow-hidden px-3.5 py-2.5"
-          aria-label={`${display.primaryLine} - shelter`}
-        >
-          <h3 className="text-sm font-bold text-fg leading-tight" dir="auto">
-            {display.primaryLine}
-          </h3>
-
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-xs">
-            {display.secondaryLine && (
-              <>
-                <span className="text-fg/40" dir="auto">{display.secondaryLine}</span>
-                <span className="text-fg/20">&middot;</span>
-              </>
-            )}
-            <span className="text-brand-soft/70">{display.typeLabel}</span>
-            {shelter.capacity && shelter.capacity > 0 ? (
-              <>
-                <span className="text-fg/20">&middot;</span>
-                <CapacityTag capacity={shelter.capacity} className="text-fg/30" />
-              </>
-            ) : null}
-          </div>
-
-          {display.meaningfulName && (
-            <p className="text-caption text-fg/25 mt-0.5 truncate" dir="auto">
-              {display.meaningfulName}
-            </p>
-          )}
-
-          {shelter.confidence && (
-            <div className="mt-1">
-              <ConfidenceBadge confidence={shelter.confidence} />
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 mt-2">
-            {onShowOnMap && (
-              <Button
-                onClick={() => onShowOnMap(shelter)}
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs text-fg/60 hover:text-fg hover:bg-fg/10 font-semibold px-3"
-              >
-                <Eye className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                הצג במפה / Show on Map
-              </Button>
-            )}
-            <Button
-              onClick={() => setChooser("directions")}
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs text-brand-soft hover:text-brand-softer hover:bg-brand-bright/10 font-semibold px-3"
-            >
-              <Navigation className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-              נווט / Directions
-            </Button>
-            <Button
-              onClick={() => setShowReportDialog(true)}
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs text-fg/30 hover:text-warn hover:bg-warn-muted/10 font-semibold px-2 ml-auto"
-              aria-label="דווח על בעיה / Report problem"
-            >
-              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-            </Button>
-          </div>
-        </article>
-        {dialogs}
-      </>
-    )
-  }
 
   return (
     <>
       <article
         className={cn(
-          "card-press rounded-2xl overflow-hidden",
-          isClosest ? "bg-brand/8 border-2 border-brand/50 shadow-glow-brand" : "bg-surface-4/95 border border-fg/8"
+          "rounded-2xl border transition-colors",
+          isClosest ? "bg-surface-2 border-brand/40" : expanded ? "bg-surface-2 border-line-strong" : "bg-surface-2/60 border-line hover:bg-surface-2"
         )}
-        aria-label={`${display.primaryLine} - ${isClosest ? "closest " : ""}shelter${distanceText ? `, ${distanceText} away` : ""}`}
+        aria-label={`${display.primaryLine} - ${isClosest ? "closest " : ""}shelter${
+          shelter.distance != null ? `, ${Math.round(shelter.distance)} meters away` : ""
+        }`}
       >
-        {isClosest && (
-          <div className="flex items-center gap-1.5 px-4 pt-3 pb-0">
-            <Chip tone="highlight" size="xs">המקלט הקרוב / Closest Shelter</Chip>
-          </div>
+        {onToggle && !isClosest ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            className="w-full flex items-start gap-3 p-4 text-left rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-bright"
+          >
+            {header}
+          </button>
+        ) : (
+          <div className="flex items-start gap-3 p-4">{header}</div>
         )}
 
-        <div className="flex items-center gap-3 px-4 pt-3 pb-2">
-          {rank != null && <RankBadge rank={rank} />}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-title font-bold text-fg leading-snug" dir="auto">
-              {display.primaryLine}
-            </h3>
-            {display.secondaryLine && (
-              <p className="text-label text-fg/40 mt-0.5 truncate" dir="auto">
-                {display.secondaryLine}
-              </p>
-            )}
+        {expanded && (
+          <div className="px-4 pb-4 -mt-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption text-fg-muted">
+              {type ? <Bi he={type.he} en={type.en} /> : <span>{display.typeLabel}</span>}
+              <CapacityTag capacity={shelter.capacity} />
+              <ConfidenceBadge confidence={shelter.confidence} />
+            </div>
+
+            <div className="flex items-center gap-4 mt-2 text-caption text-fg-subtle">
+              {shelter.etas && (
+                <>
+                  <span
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                    title="הליכה / Walk"
+                    aria-label={`הליכה / Walk ${formatEta(shelter.etas.walk)}`}
+                  >
+                    <PersonStanding className="h-4 w-4" aria-hidden="true" />
+                    <span className="font-semibold text-fg tabular-nums">{formatEta(shelter.etas.walk)}</span>
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                    title="ריצה / Run"
+                    aria-label={`ריצה / Run ${formatEta(shelter.etas.run)}`}
+                  >
+                    <Zap className="h-4 w-4" aria-hidden="true" />
+                    <span className="font-semibold text-fg tabular-nums">{formatEta(shelter.etas.run)}</span>
+                  </span>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowReportDialog(true)}
+                className="relative ml-auto -mr-2 inline-flex items-center gap-1.5 h-8 px-2 rounded-lg text-fg-subtle hover:text-fg hover:bg-fg/6 transition-colors after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']"
+                aria-label="דווח על בעיה / Report problem"
+              >
+                <Flag className="h-3.5 w-3.5" aria-hidden="true" />
+                <Bi he="דווח" en="Report" className="flex-nowrap" />
+              </button>
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant="primary"
+                size="xl"
+                className={cn("flex-1 min-w-0 px-4", !isClosest && "shadow-none")}
+                onClick={navigate}
+                disabled={!hasCoords}
+                aria-label={`Walk to shelter${shelter.etas ? `, ${formatEta(shelter.etas.walk)}` : ""}`}
+              >
+                <Navigation aria-hidden="true" />
+                <Bi he="נווט" en="Navigate" className="flex-nowrap" enClassName="max-[359px]:hidden" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-[52px] w-[52px] rounded-2xl"
+                onClick={() => setChooserOpen(true)}
+                disabled={!hasCoords}
+                aria-label="נסיעה / Drive to shelter"
+                title="Drive"
+              >
+                <Car aria-hidden="true" />
+              </Button>
+              {onShare && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-[52px] w-[52px] rounded-2xl"
+                  onClick={() => onShare(shelter)}
+                  aria-label="שתף / Share shelter"
+                  title="Share"
+                >
+                  <Share2 aria-hidden="true" />
+                </Button>
+              )}
+            </div>
           </div>
-          {distanceText && <DistanceReadout text={distanceText} />}
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
-          <Chip tone="brand">{display.typeLabel}</Chip>
-          <CapacityTag capacity={shelter.capacity} className="text-caption text-fg/25" />
-          {shelter.confidence && <ConfidenceBadge confidence={shelter.confidence} />}
-        </div>
-
-        <div className="flex gap-1.5 px-3 pb-3">
-          <TravelModeButton
-            mode="walk"
-            etaMinutes={shelter.etas?.walk}
-            disabled={!hasCoords}
-            onClick={walk}
-            aria-label={`Walk to shelter${etaLabel(shelter.etas?.walk)}`}
-          />
-          <TravelModeButton
-            mode="run"
-            etaMinutes={shelter.etas?.run}
-            disabled={!hasCoords}
-            onClick={walk}
-            aria-label={`Run to shelter${etaLabel(shelter.etas?.run)}`}
-          />
-          <TravelModeButton
-            mode="drive"
-            disabled={!hasCoords}
-            onClick={() => setChooser("drive")}
-            aria-label="Drive to shelter"
-          />
-          {onShare && (
-            <TravelModeButton mode="share" onClick={() => onShare(shelter)} aria-label="שתף / Share shelter" />
-          )}
-          <TravelModeButton
-            mode="report"
-            onClick={() => setShowReportDialog(true)}
-            aria-label="דווח על בעיה / Report problem"
-          />
-        </div>
+        )}
       </article>
-      {dialogs}
+
+      <NavigationChooser
+        open={chooserOpen}
+        onOpenChange={setChooserOpen}
+        purpose="drive"
+        title={display.primaryLine}
+        onSelect={handleDrive}
+      />
+      <ReportProblemDialog shelter={shelter} open={showReportDialog} onOpenChange={setShowReportDialog} />
     </>
   )
 }

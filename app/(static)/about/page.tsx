@@ -19,7 +19,7 @@ const TYPE_ICONS = {
 
 const TYPE_COLORS = {
   government: "text-info",
-  ngo: "text-pink-400",
+  ngo: "text-brand-soft",
   community: "text-live",
   opensource: "text-warn",
 }
@@ -33,19 +33,19 @@ export default function AboutPage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-10 pb-16">
-      <div className="text-center mb-12">
-        <div className="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand/30">
-          <Shield className="h-8 w-8 text-fg" />
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14 pb-20">
+      <div className="text-center mb-14">
+        <div className="w-12 h-12 rounded-2xl bg-brand/15 text-brand-bright flex items-center justify-center mx-auto mb-5">
+          <Shield className="h-6 w-6" />
         </div>
-        <h1 className="text-3xl font-black mb-2">Get Shelter</h1>
-        <p className="text-lg text-fg/60">Emergency Bomb Shelter Locator for Israel</p>
-        <p className="text-lg text-fg/60" dir="rtl">איתור מקלטים בזמן אמת בישראל</p>
+        <h1 className="text-display sm:text-[40px] sm:leading-[44px] font-bold tracking-tight text-fg mb-3">Get Shelter</h1>
+        <p className="text-body text-fg-muted">Emergency Bomb Shelter Locator for Israel</p>
+        <p className="text-body text-fg-muted" dir="rtl">איתור מקלטים בזמן אמת בישראל</p>
       </div>
 
-      <div className="prose prose-invert prose-sm max-w-none space-y-8 text-fg/80 leading-relaxed">
+      <div className="space-y-10 text-body text-fg-muted leading-relaxed [&_section]:space-y-4 [&_strong]:text-fg [&_strong]:font-semibold">
         <section>
-          <h2 className="text-xl font-bold text-fg">Our Mission</h2>
+          <h2 className="text-heading font-semibold text-fg tracking-tight">Our Mission</h2>
           <p>
             When a siren goes off, every second counts. Get Shelter helps people in Israel find the
             nearest bomb shelter instantly — whether you&apos;re a resident, a tourist, or a new immigrant
@@ -59,7 +59,7 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-fg">How It Works</h2>
+          <h2 className="text-heading font-semibold text-fg tracking-tight">How It Works</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               { step: "1", title: "Open the app", desc: "Your location is detected automatically" },
@@ -67,26 +67,26 @@ export default function AboutPage() {
               { step: "3", title: "Tap to navigate", desc: "Opens your preferred maps app" },
               { step: "4", title: "Get to safety", desc: "Follow directions to the nearest shelter" },
             ].map((item) => (
-              <div key={item.step} className="bg-fg/5 rounded-xl p-4 border border-fg/5">
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-xs font-black">
+              <div key={item.step} className="rounded-2xl bg-surface-2 border border-line p-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="w-7 h-7 rounded-full bg-brand/15 text-brand-soft text-label font-semibold flex items-center justify-center flex-shrink-0">
                     {item.step}
                   </span>
-                  <span className="font-bold text-fg text-sm">{item.title}</span>
+                  <span className="font-semibold text-fg text-body">{item.title}</span>
                 </div>
-                <p className="text-xs text-fg/50 pl-10">{item.desc}</p>
+                <p className="text-label text-fg-muted pl-10">{item.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-fg">Data Sources</h2>
+          <h2 className="text-heading font-semibold text-fg tracking-tight">Data Sources</h2>
           <p>
             Get Shelter aggregates data from <strong>{DATA_SOURCES.length} verified open sources</strong>{" "}
             across Israel. Our database currently contains <strong>2,939 shelter locations</strong>.
           </p>
-          <div className="space-y-4 mt-4">
+          <div className="space-y-6 mt-4">
             {(Object.entries(grouped) as [keyof typeof TYPE_ICONS, typeof DATA_SOURCES][]).map(
               ([type, sources]) =>
                 sources.length > 0 && (
@@ -96,19 +96,19 @@ export default function AboutPage() {
                         const Icon = TYPE_ICONS[type]
                         return <Icon className={`h-4 w-4 ${TYPE_COLORS[type]}`} />
                       })()}
-                      <h3 className={`text-sm font-bold ${TYPE_COLORS[type]}`}>
+                      <h3 className={`text-label font-semibold ${TYPE_COLORS[type]}`}>
                         {type === "government" ? "Government Sources" : type === "ngo" ? "NGO Sources" : type === "community" ? "Community Sources" : "Open Source"}
                       </h3>
                     </div>
                     <div className="space-y-1.5">
                       {sources.map((source) => (
-                        <div key={source.id} className="bg-fg/4 rounded-lg px-3 py-2 border border-fg/5">
-                          <p className="text-sm font-semibold text-fg">
+                        <div key={source.id} className="rounded-xl bg-surface-2 border border-line px-4 py-3">
+                          <p className="text-label font-semibold text-fg">
                             {source.name}
-                            <span className="text-fg/30 mx-1.5">/</span>
-                            <span className="text-fg/50" dir="rtl">{source.nameHe}</span>
+                            <span className="text-fg-subtle mx-1.5">/</span>
+                            <span className="text-fg-muted" dir="rtl">{source.nameHe}</span>
                           </p>
-                          <p className="text-xs text-fg/40 mt-0.5">{source.description}</p>
+                          <p className="text-caption text-fg-subtle mt-0.5">{source.description}</p>
                         </div>
                       ))}
                     </div>
@@ -119,19 +119,19 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-fg">Emergency Numbers / מספרי חירום</h2>
+          <h2 className="text-heading font-semibold text-fg tracking-tight">Emergency Numbers / מספרי חירום</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { number: "100", label: "Police / משטרה", color: "bg-info-strong/15 border-info-strong/20 text-info" },
-              { number: "101", label: "MDA Ambulance / מד\"א", color: "bg-brand-bright/15 border-brand-bright/20 text-brand-soft" },
-              { number: "102", label: "Fire Dept / כיבוי אש", color: "bg-orange-500/15 border-orange-500/20 text-orange-400" },
-              { number: "104", label: "Home Front / פיקוד העורף", color: "bg-live-strong/15 border-live-strong/20 text-live" },
+              { number: "100", label: "Police / משטרה", color: "bg-info/10 border-info/20 text-info" },
+              { number: "101", label: "MDA Ambulance / מד\"א", color: "bg-brand/10 border-brand/20 text-brand-soft" },
+              { number: "102", label: "Fire Dept / כיבוי אש", color: "bg-warn/10 border-warn/20 text-warn" },
+              { number: "104", label: "Home Front / פיקוד העורף", color: "bg-live/10 border-live/20 text-live" },
             ].map((item) => (
               <a key={item.number} href={`tel:${item.number}`} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${item.color} transition-opacity hover:opacity-80`}>
                 <Phone className="h-4 w-4 flex-shrink-0" />
                 <div>
-                  <span className="text-lg font-black">{item.number}</span>
-                  <p className="text-tiny opacity-70">{item.label}</p>
+                  <span className="text-title font-bold">{item.number}</span>
+                  <p className="text-caption opacity-80">{item.label}</p>
                 </div>
               </a>
             ))}
@@ -139,9 +139,9 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-fg">Privacy & Trust</h2>
-          <div className="bg-green-950/30 border border-live-strong/20 rounded-xl p-4">
-            <ul className="space-y-2 text-sm">
+          <h2 className="text-heading font-semibold text-fg tracking-tight">Privacy & Trust</h2>
+          <div className="rounded-2xl border border-live/25 bg-live/8 p-5">
+            <ul className="space-y-2.5 text-body">
               {["No personal data collected — ever", "No cookies, no tracking, no analytics", "Location data stays on your device", "100% free, no ads, no premium features", "Open data from verified sources"].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="text-live mt-0.5">✓</span>
@@ -153,26 +153,26 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-fg">Support the Project</h2>
+          <h2 className="text-heading font-semibold text-fg tracking-tight">Support the Project</h2>
           <p>
             Get Shelter is a free community project. If you&apos;d like to help keep it running, consider{" "}
-            <Link href="/donate" className="text-brand-soft hover:text-brand-softer underline">making a donation</Link>.
+            <Link href="/donate" className="text-info hover:underline underline-offset-4">making a donation</Link>.
             Every contribution goes directly toward hosting costs, data verification, and development.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-fg">Contact</h2>
+          <h2 className="text-heading font-semibold text-fg tracking-tight">Contact</h2>
           <p>Have questions, found incorrect data, or want to help?</p>
           <p>Email:{" "}
-            <a href="mailto:donate@getshelter.app" className="text-brand-soft hover:text-brand-softer underline">donate@getshelter.app</a>
+            <a href="mailto:donate@getshelter.app" className="text-info hover:underline underline-offset-4">donate@getshelter.app</a>
           </p>
         </section>
 
-        <section className="flex gap-4 text-xs text-fg/30">
-          <Link href="/terms" className="hover:text-fg/60 underline">Terms of Service</Link>
-          <Link href="/privacy" className="hover:text-fg/60 underline">Privacy Policy</Link>
-          <Link href="/safety-guide" className="hover:text-fg/60 underline">Safety Guide</Link>
+        <section className="flex flex-wrap gap-x-5 gap-y-2 text-label text-fg-subtle">
+          <Link href="/terms" className="hover:text-fg-muted underline underline-offset-4">Terms of Service</Link>
+          <Link href="/privacy" className="hover:text-fg-muted underline underline-offset-4">Privacy Policy</Link>
+          <Link href="/safety-guide" className="hover:text-fg-muted underline underline-offset-4">Safety Guide</Link>
         </section>
       </div>
     </main>

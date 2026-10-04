@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { Info, Building2, Heart, Users, Code2, ExternalLink, AlertTriangle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Bi } from "@/components/ui/bi"
+import { Chip } from "@/components/ui/chip"
+import { IconButton } from "@/components/ui/icon-button"
 import {
   Dialog,
   DialogContent,
@@ -21,16 +23,16 @@ const TYPE_ICONS = {
 
 const TYPE_COLORS = {
   government: "text-info",
-  ngo: "text-pink-400",
+  ngo: "text-brand-soft",
   community: "text-live",
   commercial: "text-warn",
 }
 
 const TYPE_LABELS = {
-  government: "Government / ממשלתי",
-  ngo: "NGO / עמותה",
-  community: "Community / קהילתי",
-  commercial: "Commercial / מסחרי",
+  government: { he: "ממשלתי", en: "Government" },
+  ngo: { he: "עמותה", en: "NGO" },
+  community: { he: "קהילתי", en: "Community" },
+  commercial: { he: "מסחרי", en: "Commercial" },
 }
 
 function formatDate(dateStr?: string): string {
@@ -54,28 +56,20 @@ export default function DataSourcesDialog() {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        variant="ghost"
-        size="sm"
-        className="h-7 w-7 p-0 text-fg/35 hover:text-fg hover:bg-fg/10 rounded-full"
-        aria-label="Data sources"
-      >
-        <Info className="h-3.5 w-3.5" />
-      </Button>
+      <IconButton label="Data sources" size="sm" onClick={() => setOpen(true)}>
+        <Info />
+      </IconButton>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-panel border border-fg/10 text-fg max-w-md mx-auto rounded-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="text-lg font-black text-center">
-              Data Sources
-            </DialogTitle>
-            <DialogDescription className="text-center text-fg/55 text-xs leading-relaxed mt-1">
+            <DialogTitle>Data Sources</DialogTitle>
+            <DialogDescription className="leading-relaxed">
               {DATA_SOURCES.length} verified open sources · {totalShelters > 0 ? totalShelters.toLocaleString() : "7,577"} shelter records from Israeli government portals, NGOs, and community mapping projects.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="overflow-y-auto flex-1 -mx-1 px-1 mt-3 space-y-4 scrollbar-thin">
+          <div className="overflow-y-auto flex-1 -mx-1 px-1 space-y-5 scrollbar-thin">
             {(Object.entries(grouped) as [keyof typeof TYPE_LABELS, typeof DATA_SOURCES][]).map(
               ([type, sources]) =>
                 sources.length > 0 && (
@@ -85,45 +79,45 @@ export default function DataSourcesDialog() {
                         const Icon = TYPE_ICONS[type]
                         return <Icon className={`h-4 w-4 ${TYPE_COLORS[type]}`} aria-hidden="true" />
                       })()}
-                      <h3 className={`text-sm font-bold ${TYPE_COLORS[type]}`}>
-                        {TYPE_LABELS[type]}
+                      <h3 className={`text-label font-semibold ${TYPE_COLORS[type]}`}>
+                        <Bi he={TYPE_LABELS[type].he} en={TYPE_LABELS[type].en} enClassName="opacity-100" />
                       </h3>
                     </div>
                     <div className="space-y-2">
                       {sources.map((source) => (
                         <div
                           key={source.id}
-                          className="bg-fg/5 rounded-xl px-3 py-2.5 border border-fg/5"
+                          className="rounded-xl bg-surface-2 border border-line px-3.5 py-3"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-fg truncate">{source.name}</p>
+                                <p className="text-label font-semibold text-fg truncate">{source.name}</p>
                                 {source.url && (
                                   <a
                                     href={source.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex-shrink-0 text-fg/25 hover:text-fg/60 transition-colors no-min-h"
+                                    className="flex-shrink-0 text-fg-subtle hover:text-fg transition-colors"
                                     aria-label={`Visit ${source.name} website`}
                                   >
-                                    <ExternalLink className="h-3 w-3" />
+                                    <ExternalLink className="h-3.5 w-3.5" />
                                   </a>
                                 )}
                               </div>
-                              <p className="text-xs text-fg/40" dir="rtl">{source.nameHe}</p>
+                              <p className="text-caption text-fg-subtle" dir="rtl">{source.nameHe}</p>
                             </div>
                             {source.recordCount != null && (
-                              <span className="text-xs font-bold text-fg/50 bg-fg/5 px-2 py-0.5 rounded-full flex-shrink-0">
+                              <Chip tone="neutral" size="sm" className="flex-shrink-0">
                                 {source.recordCount.toLocaleString()}
-                              </span>
+                              </Chip>
                             )}
                           </div>
-                          <p className="text-xs text-fg/50 mt-1 leading-relaxed">
+                          <p className="text-caption text-fg-muted mt-1.5 leading-relaxed">
                             {source.description}
                           </p>
                           {source.lastUpdated && (
-                            <p className="text-tiny text-fg/25 mt-1">
+                            <p className="text-caption text-fg-subtle mt-1">
                               Last updated: {formatDate(source.lastUpdated)}
                             </p>
                           )}
@@ -135,17 +129,17 @@ export default function DataSourcesDialog() {
             )}
 
             {/* Report incorrect data */}
-            <div className="bg-amber-950/30 border border-warn-muted/20 rounded-xl px-3 py-3">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-warn mt-0.5 flex-shrink-0" />
+            <div className="rounded-xl border border-warn/25 bg-warn/8 p-4">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-warn mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-bold text-warn-soft mb-1">Found incorrect data?</p>
-                  <p className="text-caption text-fg/40 leading-relaxed mb-2">
+                  <p className="text-label font-semibold text-warn mb-1">Found incorrect data?</p>
+                  <p className="text-caption text-fg-muted leading-relaxed mb-2">
                     If a shelter is missing, locked, or has wrong coordinates, help us improve the data.
                   </p>
                   <a
                     href="mailto:horowitzisaac@gmail.com?subject=Data%20Issue%20Report%20-%20Shelter%20Now&body=Issue%20type%3A%20%5Bwrong%20location%20%2F%20shelter%20doesn%27t%20exist%20%2F%20locked%20%2F%20other%5D%0A%0AShelter%20address%20or%20location%3A%20%0A%0ADetails%3A%20"
-                    className="inline-flex items-center gap-1.5 text-caption font-bold text-warn-soft hover:text-amber-200 transition-colors no-min-h"
+                    className="inline-flex items-center gap-1.5 text-caption font-semibold text-warn hover:underline underline-offset-4"
                   >
                     <AlertTriangle className="h-3 w-3" />
                     Report Data Issue
@@ -154,8 +148,8 @@ export default function DataSourcesDialog() {
               </div>
             </div>
 
-            <div className="bg-fg/5 rounded-xl px-3 py-3 border border-fg/5 mt-2">
-              <p className="text-xs text-fg/40 leading-relaxed text-center">
+            <div className="rounded-xl bg-surface-2 border border-line p-4">
+              <p className="text-caption text-fg-subtle leading-relaxed text-center">
                 Data is deduplicated and merged from {DATA_SOURCES.length} sources into {totalShelters > 0 ? totalShelters.toLocaleString() : "7,577"} unique shelter locations. Always verify shelter access in person during an emergency.
               </p>
             </div>

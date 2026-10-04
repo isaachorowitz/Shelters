@@ -2,8 +2,9 @@
 
 import { useEffect, type ReactNode } from "react"
 import { createPortal } from "react-dom"
-import { ExternalLink, type LucideIcon } from "lucide-react"
+import { ArrowUpRight, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "./button"
 
 /* ─────────────────────────────────────────────────────────────
    OPTION — one tappable row in an action sheet
@@ -11,10 +12,10 @@ import { cn } from "@/lib/utils"
 
 type OptionTone = "waze" | "google" | "neutral"
 
-const OPTION_TONE: Record<OptionTone, { row: string; tile: string }> = {
-  waze: { row: "bg-waze/10 border-waze/15 text-waze", tile: "bg-waze/15" },
-  google: { row: "bg-google/12 border-google/15 text-google", tile: "bg-google/15" },
-  neutral: { row: "bg-fg/8 border-fg/12 text-fg", tile: "bg-fg/9" },
+const TILE: Record<OptionTone, string> = {
+  waze: "bg-waze/15 text-waze",
+  google: "bg-google/15 text-google",
+  neutral: "bg-fg/10 text-fg",
 }
 
 interface ActionSheetOptionProps {
@@ -27,18 +28,17 @@ interface ActionSheetOptionProps {
 }
 
 export function ActionSheetOption({ label, icon: Icon, tone = "neutral", external = true, onClick }: ActionSheetOptionProps) {
-  const t = OPTION_TONE[tone]
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn("card-press w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-left border", t.row)}
+      className="card-press w-full flex items-center gap-3 h-14 px-3 rounded-xl text-left bg-surface-3 hover:bg-fg/12"
     >
-      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", t.tile)}>
-        <Icon className="h-5 w-5" aria-hidden="true" />
+      <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0", TILE[tone])}>
+        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
       </div>
-      <span className="text-heading font-bold">{label}</span>
-      {external && <ExternalLink className="h-4 w-4 ml-auto opacity-30" aria-hidden="true" />}
+      <span className="text-body font-semibold text-fg">{label}</span>
+      {external && <ArrowUpRight className="h-4 w-4 ml-auto text-fg-subtle" aria-hidden="true" />}
     </button>
   )
 }
@@ -48,48 +48,45 @@ export function ActionSheetOption({ label, icon: Icon, tone = "neutral", externa
 ───────────────────────────────────────────────────────────── */
 
 interface ActionSheetPanelProps {
-  eyebrow: string
+  eyebrow: ReactNode
   title: string
   children: ReactNode
-  cancelLabel?: string
+  cancelLabel?: ReactNode
   onCancel?: () => void
   className?: string
 }
 
-export function ActionSheetPanel({ eyebrow, title, children, cancelLabel = "ביטול / Cancel", onCancel, className }: ActionSheetPanelProps) {
+export function ActionSheetPanel({ eyebrow, title, children, cancelLabel = "ביטול · Cancel", onCancel, className }: ActionSheetPanelProps) {
   return (
     <div
       className={cn(
-        "flex flex-col rounded-t-3xl overflow-hidden bg-surface-3/99 border border-b-0 border-fg/10 shadow-action-sheet pb-safe",
+        "flex flex-col rounded-t-sheet md:rounded-sheet overflow-hidden bg-surface-2 border border-b-0 md:border-b border-line-strong shadow-sheet pb-safe",
         className
       )}
     >
-      <div className="flex justify-center pt-3 pb-1">
-        <div className="w-10 h-1 rounded-full bg-fg/20" />
+      <div className="flex justify-center pt-2.5 md:hidden">
+        <div className="w-9 h-1 rounded-full bg-fg/20" />
       </div>
 
-      <div className="px-5 pt-2 pb-4 border-b border-fg/6">
-        <p className="text-caption font-semibold text-fg/35 uppercase tracking-widest text-center">{eyebrow}</p>
-        <p className="text-title font-bold text-fg text-center mt-1 truncate px-4" dir="auto">{title}</p>
+      <div className="px-5 pt-4 pb-3">
+        <div className="text-eyebrow font-semibold uppercase tracking-wider text-fg-subtle">{eyebrow}</div>
+        <p className="text-title font-semibold text-fg mt-1 truncate" dir="auto">{title}</p>
       </div>
 
-      <div className="p-4 space-y-2.5">{children}</div>
+      <div className="px-4 space-y-2">{children}</div>
 
-      <div className="px-4 pb-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="card-press w-full py-4 rounded-2xl text-heading font-bold text-fg/60 bg-fg/6"
-        >
+      <div className="p-4">
+        <Button variant="ghost" size="lg" className="w-full" onClick={onCancel}>
           {cancelLabel}
-        </button>
+        </Button>
       </div>
     </div>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ACTION SHEET — modal bottom sheet with backdrop
+   ACTION SHEET — modal sheet with backdrop
+   Bottom sheet on phones, centered card on desktop.
 ───────────────────────────────────────────────────────────── */
 
 interface ActionSheetProps extends Omit<ActionSheetPanelProps, "onCancel" | "className"> {
@@ -116,11 +113,16 @@ export function ActionSheet({ open, onOpenChange, label, ...panel }: ActionSheet
   return createPortal(
     <>
       <div
-        className="fixed inset-0 z-modal bg-scrim/60 backdrop-blur-sm"
+        className="fixed inset-0 z-modal bg-scrim/60 backdrop-blur-sm animate-in fade-in-0 duration-200"
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      <div className="fixed bottom-0 inset-x-0 z-modal" role="dialog" aria-modal="true" aria-label={label}>
+      <div
+        className="fixed bottom-0 inset-x-0 z-modal md:bottom-auto md:top-1/2 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2 md:-translate-y-1/2 animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:fade-in-0 duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+      >
         <ActionSheetPanel {...panel} onCancel={() => onOpenChange(false)} />
       </div>
     </>,

@@ -5,10 +5,11 @@ import dynamic from "next/dynamic"
 import { AppShell } from "@/components/shell/app-shell"
 import { TopBar } from "@/components/shell/top-bar"
 import { NearbySidebar, NearbySheet } from "@/components/shelter/nearby-panel"
-import AddressSearch from "@/components/search/address-search"
+import AddressSearch, { ActiveLocationPill } from "@/components/search/address-search"
 import ShelterDirectory from "@/components/shelter-directory"
 import ShareShelterDialog from "@/components/share-shelter-dialog"
 import {
+  MapTopStack,
   LocateButton,
   LocatingPill,
   UpdateLocationButton,
@@ -341,17 +342,22 @@ export default function HomePage() {
     onOpenShare: handleOpenShare,
   }
 
+  const locateButton = userLocation && !locationError ? <LocateButton onClick={handleRecenterToUser} /> : null
+
   return (
     <AppShell
       topBar={
-        <TopBar>
-          <AddressSearch
-            onLocationSelect={handleSearchSelect}
-            activeLabel={searchLabel ?? undefined}
-            onClearActive={searchLabel ? handleClearSearch : undefined}
-            hasUserLocation={!!userLocation}
-          />
-        </TopBar>
+        <TopBar
+          search={(done, overlay) => (
+            <AddressSearch
+              autoFocus={overlay}
+              onLocationSelect={(coords, label) => {
+                handleSearchSelect(coords, label)
+                done()
+              }}
+            />
+          )}
+        />
       }
       sidebar={<NearbySidebar shelters={nearbyShelters} {...panelProps} />}
       overlays={
@@ -384,17 +390,25 @@ export default function HomePage() {
         flyToLocation={flyToLocation}
       />
 
-      {userLocation && !locationError && <LocateButton onClick={handleRecenterToUser} />}
+      {/* Status and messages, stacked at the top of the map */}
+      <MapTopStack>
+        {isInitialLoading && <LocatingPill />}
+        {searchLabel && (
+          <ActiveLocationPill
+            label={searchLabel}
+            onReturnToMe={userLocation ? handleClearSearch : undefined}
+            onClear={handleClearSearch}
+          />
+        )}
+        {locationChanged && !loadingLocation && <UpdateLocationButton onClick={handleLocationRefresh} />}
+        {outsideIsrael && !searchLocation && !isInitialLoading && <OutsideIsraelBanner />}
+        {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
+          <LocationErrorCard message={locationError} onRetry={requestLocation} />
+        )}
+      </MapTopStack>
 
-      {locationChanged && !loadingLocation && <UpdateLocationButton onClick={handleLocationRefresh} />}
-
-      {outsideIsrael && !searchLocation && !isInitialLoading && <OutsideIsraelBanner />}
-
-      {isInitialLoading && <LocatingPill />}
-
-      {locationError && !permissionDenied && !loadingLocation && !searchLocation && (
-        <LocationErrorCard message={locationError} onRetry={requestLocation} />
-      )}
+      {/* Desktop: locate control top-right of the map (phones carry it on the sheet) */}
+      {locateButton && <div className="hidden md:block absolute top-4 right-4 z-map-overlay">{locateButton}</div>}
 
       {permissionDenied && !isInitialLoading && !searchLocation && (
         <PermissionPrompt
@@ -412,7 +426,7 @@ export default function HomePage() {
 
       {/* Phone: bottom sheet with the top 3 shelters (hidden on md+) */}
       <div className="md:hidden">
-        <NearbySheet shelters={nearbyShelters.slice(0, 3)} {...panelProps} />
+        <NearbySheet shelters={nearbyShelters.slice(0, 3)} accessory={locateButton} {...panelProps} />
       </div>
     </AppShell>
   )

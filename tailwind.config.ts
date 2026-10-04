@@ -14,53 +14,34 @@ const config: Config = {
       colors: {
         // ── Design tokens (styles/tokens.css) ──
         bg: token("bg"),
-        fg: token("fg"),
+        fg: {
+          DEFAULT: token("fg"),
+          /** Secondary text. AA on every surface. */
+          muted: "rgb(var(--gs-fg) / 0.7)",
+          /** Tertiary text and metadata. Still AA; never go lower for text. */
+          subtle: "rgb(var(--gs-fg) / 0.54)",
+        },
+        line: {
+          DEFAULT: "rgb(var(--gs-fg) / 0.08)",
+          strong: "rgb(var(--gs-fg) / 0.14)",
+        },
         scrim: token("scrim"),
         panel: token("panel"),
         surface: {
           1: token("surface-1"),
           2: token("surface-2"),
           3: token("surface-3"),
-          4: token("surface-4"),
         },
         brand: {
           DEFAULT: token("brand"),
           bright: token("brand-bright"),
           strong: token("brand-strong"),
           soft: token("brand-soft"),
-          softer: token("brand-softer"),
           deep: token("brand-deep"),
         },
-        live: { DEFAULT: token("live"), strong: token("live-strong") },
-        warn: {
-          DEFAULT: token("warn"),
-          soft: token("warn-soft"),
-          pale: token("warn-pale"),
-          muted: token("warn-muted"),
-          strong: token("warn-strong"),
-          press: token("warn-press"),
-          deep: token("warn-deep"),
-          pin: token("warn-pin"),
-          "pin-soft": token("warn-pin-soft"),
-          "pin-edge": token("warn-pin-edge"),
-        },
-        info: {
-          DEFAULT: token("info"),
-          soft: token("info-soft"),
-          strong: token("info-strong"),
-        },
-        caution: token("caution"),
-        "danger-deep": token("danger-deep"),
-        walk: token("walk"),
-        run: token("run"),
-        drive: token("drive"),
-        rank: {
-          1: token("rank-1"),
-          2: token("rank-2"),
-          3: token("rank-3"),
-          4: token("rank-4"),
-          5: token("rank-5"),
-        },
+        live: token("live"),
+        warn: { DEFAULT: token("warn"), strong: token("warn-strong") },
+        info: { DEFAULT: token("info"), strong: token("info-strong") },
         waze: token("waze"),
         google: token("google"),
 
@@ -118,19 +99,17 @@ const config: Config = {
         97: "0.97",
         99: "0.99",
       },
-      // Font sizes without a paired line-height, so they sit inside the
-      // surrounding leading exactly like the px values they replaced.
+      // Type scale. Each size carries its own line height; a `leading-*`
+      // class still overrides it. Nothing below 11px, and 11px is for
+      // uppercase eyebrow labels only.
       fontSize: {
-        nano: "8px",
-        micro: "9px",
-        tiny: "10px",
-        caption: "11px",
-        label: "12px",
-        ui: "13px",
-        body: "14px",
-        title: "15px",
-        heading: "16px",
-        display: "22px",
+        eyebrow: ["11px", "14px"],
+        caption: ["12px", "16px"],
+        label: ["13px", "18px"],
+        body: ["15px", "22px"],
+        title: ["17px", "22px"],
+        heading: ["22px", "28px"],
+        display: ["30px", "34px"],
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -160,20 +139,22 @@ const config: Config = {
         popover: "99999",
       },
       boxShadow: {
-        sheet: "0 -8px 40px rgba(0,0,0,0.7)",
-        "action-sheet": "0 -12px 60px rgba(0,0,0,0.8)",
-        drawer: "-8px 0 40px rgba(0,0,0,0.6)",
-        popover: "0 12px 48px rgba(0,0,0,0.95)",
-        pin: "0 4px 20px rgba(0,0,0,0.6)",
-        "glow-brand": "0 0 20px rgba(220,38,38,0.15)",
+        sheet: "0 -12px 40px rgba(0,0,0,0.55)",
+        drawer: "-12px 0 40px rgba(0,0,0,0.55)",
+        popover: "0 16px 48px rgba(0,0,0,0.6)",
+        "glow-brand": "0 8px 24px -6px rgba(220,38,38,0.55)",
       },
       transitionTimingFunction: {
         spring: "var(--gs-ease-spring)",
       },
       transitionDuration: {
         fast: "120ms",
-        drawer: "220ms",
+        drawer: "260ms",
         sheet: "380ms",
+      },
+      fontFamily: {
+        // Geist has no Hebrew glyphs; the browser falls back per glyph to Heebo.
+        sans: ["var(--font-geist-sans)", "var(--font-heebo)", "system-ui", "-apple-system", "sans-serif"],
       },
     },
   },

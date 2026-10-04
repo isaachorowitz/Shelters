@@ -1,5 +1,5 @@
 import type { ReactNode, TouchEvent } from "react"
-import { SHEET_SNAPS } from "@/lib/design/layout"
+import { SHEET_SNAPS, SHEET_PEEK_MIN_PX } from "@/lib/design/layout"
 import { cn } from "@/lib/utils"
 
 const SAB = "env(safe-area-inset-bottom)"
@@ -20,43 +20,69 @@ interface BottomSheetProps {
   dragging?: boolean
   /** Touch and tap handlers for the grab area (see useSheetSnap). */
   handleProps?: SheetHandleProps
-  /** Summary row under the grab pill, always visible. */
+  /** Summary row under the grab handle, always visible. */
   summary: ReactNode
+  /** Controls that ride on the sheet's top edge (e.g. the locate button). */
+  accessory?: ReactNode
+  /** Hides the accessory (when the sheet is fully open). */
+  hideAccessory?: boolean
   children: ReactNode
   className?: string
 }
 
 /**
- * Mobile bottom sheet that sits over the map. Pure layout: pair it with
+ * Phone bottom sheet that sits over the map. Pure layout: pair it with
  * useSheetSnap() for drag and snap behavior.
  */
-export function BottomSheet({ label, height, dragging, handleProps, summary, children, className }: BottomSheetProps) {
+export function BottomSheet({
+  label,
+  height,
+  dragging,
+  handleProps,
+  summary,
+  accessory,
+  hideAccessory,
+  children,
+  className,
+}: BottomSheetProps) {
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-0 z-sheet flex flex-col bg-surface-1/97 rounded-t-sheet border-t border-fg/9 shadow-sheet backdrop-blur-xl",
+        "fixed inset-x-0 bottom-0 z-sheet flex flex-col bg-surface-1/95 backdrop-blur-xl rounded-t-sheet border-t border-line-strong shadow-sheet",
         !dragging && "transition-[height] duration-sheet ease-spring",
         className
       )}
       style={{
-        height: height === null ? `calc(${SHEET_SNAPS.peek * 100}dvh + ${SAB})` : `calc(${height}px + ${SAB})`,
+        height:
+          height === null
+            ? `calc(max(${SHEET_SNAPS.peek * 100}dvh, ${SHEET_PEEK_MIN_PX}px) + ${SAB})`
+            : `calc(${height}px + ${SAB})`,
         maxHeight: `calc(${SHEET_SNAPS.full * 100}dvh + ${SAB})`,
       }}
       role="region"
       aria-label={label}
     >
+      {accessory && (
+        <div
+          className={cn(
+            "absolute bottom-full right-3 mb-3 flex flex-col gap-2 transition-opacity duration-200",
+            hideAccessory && "opacity-0 pointer-events-none"
+          )}
+        >
+          {accessory}
+        </div>
+      )}
+
       {/* Grab area */}
       <div
-        className="shrink-0 flex flex-col items-center pt-2.5 pb-1 cursor-grab active:cursor-grabbing"
+        className="shrink-0 flex flex-col items-center pt-2 cursor-grab active:cursor-grabbing touch-none"
         {...handleProps}
         role="button"
         aria-label="Drag or tap to resize"
       >
-        <div className="w-10 h-1 rounded-full mb-3 bg-fg/22" aria-hidden="true" />
-        <div className="flex items-center w-full px-4 pb-2">{summary}</div>
+        <div className="w-9 h-1 rounded-full bg-fg/25" aria-hidden="true" />
+        <div className="flex items-center w-full px-4 pt-2.5 pb-3">{summary}</div>
       </div>
-
-      <div className="shrink-0 h-px mx-4 bg-fg/7" />
 
       {/* Scrollable content */}
       <div

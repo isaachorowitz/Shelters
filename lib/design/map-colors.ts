@@ -6,18 +6,17 @@
 export const MAP_COLORS = {
   /** Every shelter dot (--gs-brand). */
   shelter: "#DC2626",
-  shelterEdge: "rgba(255,255,255,0.25)",
-  /** The single nearest shelter. */
-  nearest: "#FF1744",
-  nearestEdge: "#FCD34D",
-  /** Ranks 2–3 and 4–5 outlines. */
-  top3Edge: "#ffffff",
-  nearbyEdge: "#fbbf24",
+  /** Thin dark ring that separates dots from the dark tiles. */
+  shelterEdge: "rgba(10,10,11,0.85)",
+  /** The five nearest: same red with a white ring. */
+  nearbyEdge: "#FAFAFA",
+  /** The single nearest shelter (--gs-brand-bright) with a thick white ring. */
+  nearest: "#EF4444",
+  nearestEdge: "#FFFFFF",
   /** User dot and accuracy ring (--gs-info-strong). */
   user: "#3B82F6",
-  /** Dashed lines to the five nearest shelters, nearest first. */
-  routes: ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6"],
-  /** Popup "Navigate" button and type label. */
-  popupAction: "#DC2626",
-  popupType: "#ef4444",
+  /** Line to the nearest shelter (--gs-brand-bright). */
+  routeNearest: "#EF4444",
+  /** Dashed lines to shelters 2–5 (--gs-fg at low opacity). */
+  routeOther: "#FAFAFA",
 } as const

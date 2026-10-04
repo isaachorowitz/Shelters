@@ -10,21 +10,17 @@ export interface SearchFieldProps extends React.InputHTMLAttributes<HTMLInputEle
   onClear?: () => void
 }
 
-/** Pill-shaped search input used in the top bar and the location prompt. */
+/** Rounded search input used in the top bar and the location prompt. */
 export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
   ({ loading, onClear, value, className, ...props }, ref) => (
     <div
       className={cn(
-        "flex items-center h-9 rounded-full overflow-hidden transition-all bg-fg/8 border border-fg/10",
+        "flex items-center h-10 rounded-xl overflow-hidden transition-colors bg-fg/6 border border-line hover:border-line-strong focus-within:border-fg/30 focus-within:bg-fg/8",
         className
       )}
     >
-      <div className="flex items-center justify-center w-9 h-9 flex-shrink-0">
-        {loading ? (
-          <Spinner className="h-3.5 w-3.5 text-brand-soft" />
-        ) : (
-          <Search className="h-3.5 w-3.5 text-fg/40" aria-hidden="true" />
-        )}
+      <div className="flex items-center justify-center w-10 h-10 flex-shrink-0 text-fg-subtle">
+        {loading ? <Spinner className="h-4 w-4" /> : <Search className="h-4 w-4" aria-hidden="true" />}
       </div>
       <input
         ref={ref}
@@ -32,7 +28,7 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
         inputMode="search"
         value={value}
         // 16px stops iOS Safari from zooming in on focus.
-        className="flex-1 bg-transparent text-fg text-heading py-1.5 pr-1 outline-none placeholder:text-fg/30 min-w-0"
+        className="flex-1 bg-transparent text-fg text-base py-2 pr-1 outline-none placeholder:text-fg-subtle min-w-0"
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="none"
@@ -44,10 +40,10 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
         <button
           type="button"
           onClick={onClear}
-          className="no-min-h flex items-center justify-center w-8 h-8 mr-0.5 rounded-full text-fg/40 hover:text-fg flex-shrink-0 transition-colors"
+          className="flex items-center justify-center w-10 h-10 -mr-0.5 rounded-lg text-fg-subtle hover:text-fg hover:bg-fg/8 flex-shrink-0 transition-colors"
           aria-label="Clear search"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
         </button>
       )}
     </div>

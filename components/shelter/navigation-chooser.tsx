@@ -2,17 +2,18 @@
 
 import { Navigation, Map, MapPin } from "lucide-react"
 import { ActionSheet, ActionSheetOption } from "@/components/ui/action-sheet"
+import { Bi } from "@/components/ui/bi"
 import type { NavApp } from "./navigation-links"
 
 const PURPOSES = {
   /** Driving: Waze first, then Google Maps. */
   drive: {
-    eyebrow: "נווט עם / Drive with",
+    eyebrow: { he: "נווט עם", en: "Drive with" },
     apps: ["waze", "google"] as NavApp[],
   },
   /** Walking directions from the directory: every app. */
   directions: {
-    eyebrow: "נווט אל / Get Directions to",
+    eyebrow: { he: "נווט אל", en: "Get directions to" },
     apps: ["google", "apple", "waze"] as NavApp[],
   },
 }
@@ -40,7 +41,7 @@ export function NavigationChooser({ open, onOpenChange, purpose, title, onSelect
       open={open}
       onOpenChange={onOpenChange}
       label="בחר אפליקציית ניווט / Choose navigation app"
-      eyebrow={p.eyebrow}
+      eyebrow={<Bi he={p.eyebrow.he} en={p.eyebrow.en} />}
       title={title}
     >
       {p.apps.map((app) => (

@@ -1,17 +1,21 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { SHEET_SNAPS } from "@/lib/design/layout"
+import { SHEET_SNAPS, SHEET_PEEK_MIN_PX } from "@/lib/design/layout"
 
 const SNAP_ORDER = [SHEET_SNAPS.peek, SHEET_SNAPS.half, SHEET_SNAPS.full]
 
 function snapTo(fraction: number): number {
-  return Math.round(window.innerHeight * fraction)
+  const h = Math.round(window.innerHeight * fraction)
+  return fraction === SHEET_SNAPS.peek ? Math.max(h, SHEET_PEEK_MIN_PX) : h
+}
+
+function snapHeights(): number[] {
+  return SNAP_ORDER.map((s) => snapTo(s))
 }
 
 function nearestSnap(height: number): number {
-  const vh = window.innerHeight
-  const snaps = SNAP_ORDER.map((s) => s * vh)
+  const snaps = snapHeights()
   return snaps.reduce((prev, cur) => (Math.abs(cur - height) < Math.abs(prev - height) ? cur : prev))
 }
 
@@ -58,8 +62,7 @@ export function useSheetSnap() {
 
   // Tap the handle: cycle through snaps
   const onClick = useCallback(() => {
-    const vh = window.innerHeight
-    const snaps = SNAP_ORDER.map((s) => s * vh)
+    const snaps = snapHeights()
     const cur = current()
     setHeight(snaps.find((s) => s > cur + 10) ?? snaps[0])
   }, [height]) // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Chip } from "@/components/ui/chip"
 import { MapPin, Shield } from "lucide-react"
 import shelterData from "@/data/shelters.json"
 
@@ -46,69 +48,68 @@ export default function SheltersDirectoryPage() {
   const totalShelters = cities.reduce((sum, c) => sum + c.count, 0)
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 pb-16">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 pb-20">
       {/* Hero */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <MapPin className="h-5 w-5 text-brand-soft" aria-hidden="true" />
-          <span className="text-sm text-brand-soft font-semibold">Shelter Directory</span>
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin className="h-4 w-4 text-brand-bright" aria-hidden="true" />
+          <span className="text-eyebrow font-semibold uppercase tracking-wider text-brand-soft">Shelter Directory</span>
         </div>
-        <h1 className="text-3xl font-black mb-1">Bomb Shelters in Israel</h1>
-        <p className="text-fg/50 text-sm">
+        <h1 className="text-display sm:text-[40px] sm:leading-[44px] font-bold tracking-tight text-fg">Bomb Shelters in Israel</h1>
+        <p className="text-body text-fg-muted mt-3">
           {totalShelters.toLocaleString()} verified shelters across {cities.length} cities
         </p>
       </div>
 
       {/* Find nearest CTA */}
-      <div className="bg-brand-deep/30 border border-brand-bright/20 rounded-xl p-4 mb-8">
-        <p className="text-sm text-fg/70 mb-2">
+      <div className="rounded-2xl bg-surface-2 border border-line p-5 mb-10">
+        <p className="text-body text-fg-muted mb-4">
           In an emergency, use the live shelter finder to get GPS directions to the nearest shelter instantly.
         </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 bg-brand hover:bg-brand-strong text-fg font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
-        >
-          <Shield className="h-4 w-4" aria-hidden="true" />
-          Find Nearest Shelter Now
-        </Link>
+        <Button asChild variant="primary" size="lg">
+          <Link href="/">
+            <Shield className="h-4 w-4" aria-hidden="true" />
+            Find Nearest Shelter Now
+          </Link>
+        </Button>
       </div>
 
       {/* City grid */}
-      <h2 className="text-lg font-bold text-fg mb-4">Browse by City / לפי עיר</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+      <h2 className="text-heading font-semibold text-fg tracking-tight mb-4">Browse by City / לפי עיר</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {cities.map((city) => (
           <Link
             key={city.slug}
             href={`/shelters/${city.slug}`}
-            className="group bg-fg/3 hover:bg-fg/6 border border-fg/6 hover:border-brand-bright/20 rounded-xl px-4 py-3 transition-all"
+            className="group rounded-2xl bg-surface-2 border border-line p-5 hover:border-line-strong hover:bg-surface-3 transition-colors"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-fg group-hover:text-brand-softer transition-colors truncate">
+                <p className="text-body font-semibold text-fg truncate">
                   {city.cityEn}
                 </p>
                 {city.cityHe && (
-                  <p className="text-xs text-fg/35 mt-0.5" dir="rtl">
+                  <p className="text-label text-fg-subtle mt-0.5" dir="rtl">
                     {city.cityHe}
                   </p>
                 )}
               </div>
-              <span className="text-xs font-bold text-fg/30 bg-fg/5 px-2 py-0.5 rounded-full flex-shrink-0">
+              <Chip tone="neutral" size="sm" className="flex-shrink-0">
                 {city.count.toLocaleString()}
-              </span>
+              </Chip>
             </div>
           </Link>
         ))}
       </div>
 
       {/* SEO text */}
-      <section className="mt-10 bg-fg/3 border border-fg/5 rounded-xl p-5">
-        <h2 className="text-sm font-bold text-fg/40 mb-2">About This Directory</h2>
-        <p className="text-xs text-fg/30 leading-relaxed">
+      <section className="mt-12 rounded-2xl bg-surface-2 border border-line p-5">
+        <h2 className="text-body font-semibold text-fg mb-2">About This Directory</h2>
+        <p className="text-label text-fg-muted leading-relaxed">
           Get Shelter maintains a database of {totalShelters.toLocaleString()} verified public bomb shelters and
           protected spaces across Israel. Data is sourced from municipal open data portals, NGO surveys, and
           community mapping projects. Use the{" "}
-          <Link href="/" className="text-brand-soft underline">
+          <Link href="/" className="text-info hover:underline underline-offset-4">
             live shelter finder
           </Link>{" "}
           for real-time GPS navigation to the nearest shelter during an emergency. Always follow Home Front
