@@ -154,7 +154,10 @@ const config: Config = {
       },
       fontFamily: {
         // Geist has no Hebrew glyphs; the browser falls back per glyph to Heebo.
-        sans: ["var(--font-geist-sans)", "var(--font-heebo)", "system-ui", "-apple-system", "sans-serif"],
+        // Families are named directly (next/font registers them as "Geist" and
+        // "Heebo") because the generated "Geist Fallback" face covers every code
+        // point and, if it came first, Hebrew would never reach Heebo.
+        sans: ["Geist", "Heebo", "Geist Fallback", "Heebo Fallback", "system-ui", "-apple-system", "sans-serif"],
       },
     },
   },
