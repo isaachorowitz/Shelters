@@ -33,7 +33,7 @@ When a siren sounds, you have seconds. Shelter Now uses your location to instant
 
 Shelter locations are aggregated and de-duplicated from **12+ public sources** — municipal open-data portals (Tel Aviv, Jerusalem, Haifa, and more), Israel's national CKAN catalog, OpenStreetMap, and Google Places. The full pipeline is documented in **[DATA-PIPELINE.md](DATA-PIPELINE.md)**.
 
-The merged dataset ships in [`data/shelters.json`](data/shelters.json), so **the app runs with zero configuration** — no database, no API keys, no signup.
+The merged dataset ships in [`data/shelters.json`](data/shelters.json), so shelter lookups need no database or API key. Map tiles require a free CARTO Basemaps key supplied by the app operator. Visitors need no key or signup.
 
 ## Run it locally
 
@@ -44,15 +44,17 @@ pnpm install
 pnpm dev
 ```
 
-Open the printed `localhost` URL. That's it — the bundled dataset means everything works out of the box.
+The dev command loads `NEXT_PUBLIC_CARTO_BASEMAP_API_KEY` from this project's Infisical connection, using the `dev` environment and `/shelters` path. Sign in to the Infisical CLI before running it, then open the printed `localhost` URL. Keep the key in Infisical; do not put it in a repository `.env` file.
 
-> **Optional:** to serve shelters from a live Postgres/PostGIS database instead of the bundled JSON, copy `env.example` to `.env.local` and add your Supabase credentials. The app automatically falls back to the static dataset whenever the database is unset or unreachable, so this is never required.
+> **Optional:** to serve shelters from a live Postgres/PostGIS database instead of the bundled JSON, add the Supabase variables listed in `env.example` to the same Infisical path. The app automatically falls back to the static dataset whenever the database is unset or unreachable.
 
 ### Build for production
 
 ```bash
 pnpm build && pnpm start
 ```
+
+The build loads the CARTO key from Infisical's `prod` environment at `/shelters` and stops if it is missing. Next.js embeds the public map key at build time, so rebuild after changing it. Cloudflare builds use `pnpm exec opennextjs-cloudflare build`, which runs the same configured build command.
 
 ## Tech stack
 

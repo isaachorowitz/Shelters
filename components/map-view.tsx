@@ -9,6 +9,8 @@ import { SHELTER_TYPES } from "@/lib/types"
 import { getShelterDisplayInfo } from "@/lib/shelter-display"
 import { haversineDistance } from "@/lib/utils"
 
+const CARTO_TILE_URL = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(process.env.NEXT_PUBLIC_CARTO_BASEMAP_API_KEY ?? "")}`
+
 // Local marker icons — only used for user location (1 DOM element)
 const defaultIcon = L.icon({
   iconUrl: "/leaflet/marker-icon.png",
@@ -450,8 +452,8 @@ export default function MapView({
         <ZoomControl position="bottomright" />
 
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution/">CARTO</a>'
+          url={CARTO_TILE_URL}
           maxZoom={19}
           minZoom={7}
           keepBuffer={4}

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
+    "build": "infisical run --env=prod --path=/shelters -- node scripts/build.mjs",
+    "dev": "infisical run --env=dev --path=/shelters -- next dev",
     "lint": "tsc --noEmit",
     "start": "next start"
   },
